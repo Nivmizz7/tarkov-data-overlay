@@ -34,5 +34,11 @@
   // Proof: https://escapefromtarkov.fandom.com/wiki/Test_Drive_-_Part_5
   "669fa3a40c828825de06d6a1": {
     "minPlayerLevel": 32  // Was: 40
+  },
+
+  // Test Drive - Part 6 - Level requirement incorrect
+  // Proof: https://escapefromtarkov.fandom.com/wiki/Test_Drive_-_Part_6
+  "675c1ff1a757ddd00404f0aa": {
+    "minPlayerLevel": 35  // Was: 40
   }
 }
