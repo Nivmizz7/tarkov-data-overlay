@@ -11,17 +11,23 @@
         "type": "string",
         "description": "Unique identifier for the edition"
       },
+      "value": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10,
+        "description": "Numeric ID used by TarkovTracker (1-6+)"
+      },
       "title": {
         "type": "string",
         "description": "Display name of the edition"
       },
-      "stashLevel": {
+      "defaultStashLevel": {
         "type": "integer",
         "minimum": 1,
         "maximum": 5,
         "description": "Starting stash level (1-5)"
       },
-      "cultistCircleLevel": {
+      "defaultCultistCircleLevel": {
         "type": "integer",
         "minimum": 0,
         "maximum": 3,
@@ -35,7 +41,7 @@
         }
       }
     },
-    "required": ["id", "title", "stashLevel", "cultistCircleLevel", "traderRepBonus"],
+    "required": ["id", "value", "title", "defaultStashLevel", "defaultCultistCircleLevel", "traderRepBonus"],
     "additionalProperties": true
   }
 }
