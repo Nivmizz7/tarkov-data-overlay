@@ -1,9 +1,6 @@
-# overlay-monitor
+## Overlay Monitor
 
-Web monitor that watches each override file and renders the same correction
-tables as the README, but live. Each file has its own page.
-
-## Run
+Run a local web monitor that renders live correction tables from the override files:
 
 ```bash
 npm run monitor
