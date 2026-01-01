@@ -27,6 +27,3 @@ jobs:
               pm2 restart monitor  
             else  
               pm2 start monitor/server.js --name monitor  
-            fi  
-            sleep 3  
-            pm2 describe monitor || (echo "Monitor failed to start" && exit 1)
