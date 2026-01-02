@@ -176,7 +176,6 @@
   // Recent wiki update (post-1.0); not verified in-game
   "64f5deac39e45b527a7c4232": {
     experience: 18000, // Was: 35300
-    map: { id: "5704e4dad2720bb55b8b4567", name: "Lighthouse" },
     objectives: {
       "64f5deac39e45b527a7c4235": {
         description: "Eliminate PMC operatives while using an AK-12 with the proprietary suppressor and PS-320 scope on Lighthouse, Customs, or Reserve",
