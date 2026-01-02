@@ -210,7 +210,7 @@ interface TaskOverride {
   name?: string;
   wikiLink?: string;
   disabled?: boolean;
-  map?: { id: string; name: string };
+  map?: { id: string; name: string } | null;
   objectives?: Record<string, ObjectiveOverride>;
   objectivesAdd?: ObjectiveAdd[];
   // ... other fields

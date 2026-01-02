@@ -11,7 +11,7 @@ export interface TaskOverride {
   minPlayerLevel?: number;
   wikiLink?: string;
   disabled?: boolean;
-  map?: { id: string; name: string };
+  map?: { id: string; name: string } | null;
   kappaRequired?: boolean;
   lightkeeperRequired?: boolean;
   objectives?: Record<string, ObjectiveOverride>;
@@ -84,7 +84,7 @@ export interface TaskData {
   name: string;
   minPlayerLevel?: number;
   wikiLink?: string;
-  map?: { id: string; name: string };
+  map?: { id: string; name: string } | null;
   taskRequirements?: TaskRequirement[];
   objectives?: TaskObjective[];
   experience?: number;

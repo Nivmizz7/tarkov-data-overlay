@@ -212,18 +212,25 @@
         "type": "boolean"
       },
       "map": {
-        "additionalProperties": false,
         "description": "Map where the task takes place",
-        "properties": {
-          "id": {
-            "type": "string"
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "name"],
+            "type": "object"
           },
-          "name": {
-            "type": "string"
+          {
+            "type": "null"
           }
-        },
-        "required": ["id", "name"],
-        "type": "object"
+        ]
       },
       "minPlayerLevel": {
         "description": "Minimum PMC level required to start the task",

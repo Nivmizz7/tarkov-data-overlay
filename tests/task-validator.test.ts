@@ -104,6 +104,211 @@ describe('validateTaskOverride', () => {
     });
   });
 
+  describe('map validation', () => {
+    it('returns NEEDED when task has multiple objective maps and map matches', () => {
+      const apiTask = createApiTask({
+        map: { id: 'map-a', name: 'Map A' },
+        objectives: [
+          {
+            id: 'obj-1',
+            maps: [
+              { id: 'map-a', name: 'Map A' },
+              { id: 'map-b', name: 'Map B' },
+            ],
+          },
+        ],
+      });
+      const override: TaskOverride = {
+        map: { id: 'map-a', name: 'Map A' },
+        objectives: {
+          'obj-1': {
+            maps: [
+              { id: 'map-a', name: 'Map A' },
+              { id: 'map-b', name: 'Map B' },
+            ],
+          },
+        },
+      };
+
+      const result = validateTaskOverride('test-task-id', override, [apiTask]);
+
+      expect(
+        result.details.some((d) => d.field === 'map' && d.status === 'needed')
+      ).toBe(true);
+    });
+
+    it('returns NEEDED when task has multiple objective maps and map differs', () => {
+      const apiTask = createApiTask({
+        map: { id: 'map-a', name: 'Map A' },
+        objectives: [
+          {
+            id: 'obj-1',
+            maps: [
+              { id: 'map-a', name: 'Map A' },
+              { id: 'map-b', name: 'Map B' },
+            ],
+          },
+        ],
+      });
+      const override: TaskOverride = {
+        map: { id: 'map-c', name: 'Map C' },
+        objectives: {
+          'obj-1': {
+            maps: [
+              { id: 'map-a', name: 'Map A' },
+              { id: 'map-b', name: 'Map B' },
+            ],
+          },
+        },
+      };
+
+      const result = validateTaskOverride('test-task-id', override, [apiTask]);
+
+      expect(
+        result.details.some((d) => d.field === 'map' && d.status === 'needed')
+      ).toBe(true);
+    });
+
+    it('returns NEEDED when task has multiple objective maps and map is missing', () => {
+      const apiTask = createApiTask({
+        map: { id: 'map-a', name: 'Map A' },
+        objectives: [
+          {
+            id: 'obj-1',
+            maps: [
+              { id: 'map-a', name: 'Map A' },
+              { id: 'map-b', name: 'Map B' },
+            ],
+          },
+        ],
+      });
+      const override: TaskOverride = {
+        objectives: {
+          'obj-1': {
+            maps: [
+              { id: 'map-a', name: 'Map A' },
+              { id: 'map-b', name: 'Map B' },
+            ],
+          },
+        },
+      };
+
+      const result = validateTaskOverride('test-task-id', override, [apiTask]);
+
+      expect(
+        result.details.some((d) => d.field === 'map' && d.status === 'needed')
+      ).toBe(true);
+    });
+
+    it('returns NEEDED when task has multiple objective maps and map is null but API map is set', () => {
+      const apiTask = createApiTask({
+        map: { id: 'map-a', name: 'Map A' },
+        objectives: [
+          {
+            id: 'obj-1',
+            maps: [
+              { id: 'map-a', name: 'Map A' },
+              { id: 'map-b', name: 'Map B' },
+            ],
+          },
+        ],
+      });
+      const override: TaskOverride = {
+        map: null,
+        objectives: {
+          'obj-1': {
+            maps: [
+              { id: 'map-a', name: 'Map A' },
+              { id: 'map-b', name: 'Map B' },
+            ],
+          },
+        },
+      };
+
+      const result = validateTaskOverride('test-task-id', override, [apiTask]);
+
+      expect(
+        result.details.some((d) => d.field === 'map' && d.status === 'needed')
+      ).toBe(true);
+    });
+
+    it('returns FIXED when task has multiple objective maps and map is null with API map null', () => {
+      const apiTask = createApiTask({
+        map: null,
+        objectives: [
+          {
+            id: 'obj-1',
+            maps: [
+              { id: 'map-a', name: 'Map A' },
+              { id: 'map-b', name: 'Map B' },
+            ],
+          },
+        ],
+      });
+      const override: TaskOverride = {
+        map: null,
+        objectives: {
+          'obj-1': {
+            maps: [
+              { id: 'map-a', name: 'Map A' },
+              { id: 'map-b', name: 'Map B' },
+            ],
+          },
+        },
+      };
+
+      const result = validateTaskOverride('test-task-id', override, [apiTask]);
+
+      expect(
+        result.details.some((d) => d.field === 'map' && d.status === 'fixed')
+      ).toBe(true);
+    });
+
+    it('treats Night Factory as Factory for multi-map detection', () => {
+      const apiTask = createApiTask({
+        map: { id: 'factory', name: 'Factory' },
+        objectives: [
+          {
+            id: 'obj-1',
+            maps: [
+              { id: 'factory', name: 'Factory' },
+              { id: 'night-factory', name: 'Night Factory' },
+            ],
+          },
+        ],
+      });
+      const override: TaskOverride = { map: { id: 'factory', name: 'Factory' } };
+
+      const result = validateTaskOverride('test-task-id', override, [apiTask]);
+
+      expect(
+        result.details.some((d) => d.field === 'map' && d.status === 'fixed')
+      ).toBe(true);
+    });
+
+    it('treats Ground Zero 21+ as Ground Zero for multi-map detection', () => {
+      const apiTask = createApiTask({
+        map: { id: 'gz', name: 'Ground Zero' },
+        objectives: [
+          {
+            id: 'obj-1',
+            maps: [
+              { id: 'gz', name: 'Ground Zero' },
+              { id: 'gz-21', name: 'Ground Zero 21+' },
+            ],
+          },
+        ],
+      });
+      const override: TaskOverride = { map: { id: 'gz', name: 'Ground Zero' } };
+
+      const result = validateTaskOverride('test-task-id', override, [apiTask]);
+
+      expect(
+        result.details.some((d) => d.field === 'map' && d.status === 'fixed')
+      ).toBe(true);
+    });
+  });
+
   describe('objectives validation', () => {
     const apiTaskWithObjectives = createApiTask({
       objectives: [

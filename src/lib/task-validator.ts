@@ -76,6 +76,45 @@ function compareSubset(overrideValue: unknown, apiValue: unknown): boolean {
   return true;
 }
 
+type ObjectiveLike = { maps?: Array<{ id?: string; name?: string }> };
+
+const MAP_NAME_ALIASES: Record<string, string> = {
+  'night factory': 'Factory',
+  'ground zero 21+': 'Ground Zero',
+};
+
+function canonicalMapKey(map?: { id?: string; name?: string }): string | undefined {
+  if (!map) return undefined;
+  const name = map.name?.trim();
+  if (name) {
+    const alias = MAP_NAME_ALIASES[name.toLowerCase()];
+    return alias ?? name;
+  }
+  return map.id;
+}
+
+function collectObjectiveMapKeys(objectives: ObjectiveLike[]): Set<string> {
+  const mapKeys = new Set<string>();
+  for (const objective of objectives) {
+    for (const map of objective.maps ?? []) {
+      const key = canonicalMapKey(map);
+      if (key) mapKeys.add(key);
+    }
+  }
+  return mapKeys;
+}
+
+function hasMultipleObjectiveMaps(override: TaskOverride, apiTask: TaskData): boolean {
+  const apiObjectives = (apiTask.objectives ?? []) as ObjectiveLike[];
+  const overrideObjectives = Object.values(override.objectives ?? {}) as ObjectiveLike[];
+  const mapKeys = new Set<string>();
+
+  for (const key of collectObjectiveMapKeys(apiObjectives)) mapKeys.add(key);
+  for (const key of collectObjectiveMapKeys(overrideObjectives)) mapKeys.add(key);
+
+  return mapKeys.size > 1;
+}
+
 /**
  * Create a simple field comparison validator
  */
@@ -102,10 +141,66 @@ function createFieldValidator<K extends keyof TaskOverride & keyof TaskData>(
 }
 
 /**
+ * Validate map field with awareness of multi-map objectives
+ */
+const validateMap: FieldValidator = (override, apiTask) => {
+  const overrideValue = override.map;
+  const apiValue = apiTask.map;
+  const hasMultiMaps = hasMultipleObjectiveMaps(override, apiTask);
+
+  if (hasMultiMaps) {
+    if (overrideValue === undefined) {
+      if (apiValue === null || apiValue === undefined) {
+        return null;
+      }
+      return {
+        field: 'map',
+        status: 'needed',
+        message: `map: task has multiple objective maps; add map: null to clear top-level map (API=${formatValue(
+          apiValue
+        )}) - STILL NEEDED`,
+      };
+    }
+
+    if (overrideValue !== null) {
+      return {
+        field: 'map',
+        status: 'needed',
+        message: `map: task has multiple objective maps; override should be null (API=${formatValue(
+          apiValue
+        )}, Override=${formatValue(overrideValue)}) - STILL NEEDED`,
+      };
+    }
+
+    const isMatch = compareSubset(overrideValue, apiValue);
+    return {
+      field: 'map',
+      status: isMatch ? 'fixed' : 'needed',
+      message: isMatch
+        ? 'map: null - FIXED IN API'
+        : `map: API=${formatValue(apiValue)}, Override=null - STILL NEEDED`,
+    };
+  }
+
+  if (overrideValue === undefined) return null;
+
+  const isMatch = compareSubset(overrideValue, apiValue);
+
+  return {
+    field: 'map',
+    status: isMatch ? 'fixed' : 'needed',
+    message: isMatch
+      ? `${'map'}: ${formatValue(apiValue)} - FIXED IN API`
+      : `map: API=${formatValue(apiValue)}, Override=${formatValue(overrideValue)} - STILL NEEDED`,
+  };
+};
+
+/**
  * Format a value for display
  */
 function formatValue(value: unknown): string {
-  if (value === undefined || value === null) return 'undefined';
+  if (value === undefined) return 'undefined';
+  if (value === null) return 'null';
   if (typeof value === 'string') return `'${value}'`;
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
@@ -159,7 +254,7 @@ const FIELD_VALIDATORS: FieldValidator[] = [
   createFieldValidator('minPlayerLevel'),
   createFieldValidator('name'),
   createFieldValidator('wikiLink'),
-  createFieldValidator('map'),
+  validateMap,
   createFieldValidator('experience'),
   createFieldValidator('finishRewards'),
   validateTaskRequirements,
@@ -237,7 +332,7 @@ export function validateTaskOverride(
       } else {
         for (const [field, overrideValue] of Object.entries(objOverride)) {
           if (overrideValue === undefined) continue;
-          const apiValue = (apiObj as Record<string, unknown>)[field];
+          const apiValue = (apiObj as unknown as Record<string, unknown>)[field];
           const isMatch = compareSubset(overrideValue, apiValue);
           details.push({
             field: `objective:${objId}:${field}`,
