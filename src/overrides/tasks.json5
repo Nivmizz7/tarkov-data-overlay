@@ -306,4 +306,11 @@
       ],
     },
   },
+
+  // Escort - Level requirement incorrect
+  // Proof: https://escapefromtarkov.fandom.com/wiki/Escort
+  // User confirmed: level 46 required, not 60
+  "60e71b62a0beca400d69efc4": {
+    minPlayerLevel: 46, // Was: 60
+  },
 }
