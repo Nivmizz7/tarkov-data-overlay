@@ -324,4 +324,19 @@
   "60e71b62a0beca400d69efc4": {
     minPlayerLevel: 46, // Was: 60
   },
+
+  // Forester's Duty - objectives description incorrect
+  // Proof: https://escapefromtarkov.fandom.com/wiki/Forester%27s_Duty
+  // Recent wiki update (post-1.0)
+  "66ab9da7eb102b9bcd08591c": {
+    objectives: {
+      "66ab9da7eb102b9bcd08591d": {
+        description: "Eliminate 5 Scavs on Lighthouse (In one raid)", // Was: Eliminate Scavs at the village on Lighthouse (In one raid)
+      },
+      "66ab9da7eb102b9bcd085922": {
+        description: "Eliminate 5 Scavs on Shoreline (In one raid)", // Was: Eliminate Scavs at the village on Shoreline (In one raid)
+      },
+    },
+  },
+
 }
