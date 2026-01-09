@@ -39,12 +39,17 @@ describe('validateTaskOverride', () => {
   });
 
   describe('when task is marked as disabled', () => {
-    it('returns REMOVED_FROM_API status', () => {
+    it('returns NEEDED status', () => {
       const override: TaskOverride = { disabled: true };
       const result = validateTaskOverride('test-task-id', override, apiTasks);
 
-      expect(result.status).toBe('REMOVED_FROM_API');
-      expect(result.stillNeeded).toBe(false);
+      expect(result.status).toBe('NEEDED');
+      expect(result.stillNeeded).toBe(true);
+      expect(
+        result.details.some(
+          (d) => d.field === 'disabled' && d.status === 'check'
+        )
+      ).toBe(true);
     });
   });
 

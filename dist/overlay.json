@@ -1466,9 +1466,9 @@
           {
             "count": 1,
             "item": {
-              "id": "6871284e9a353bb50606f3ed",
-              "name": "AS VAL MOD.4 9x39 special assault rifle",
-              "shortName": "AS VAL MOD.4"
+              "id": "68d502e016a16a91e200bbbc",
+              "name": "AS VAL MOD.4 9x39 special assault rifle Default",
+              "shortName": "AS VAL MOD.4 Default"
             }
           },
           {
@@ -1516,7 +1516,7 @@
   },
   "$meta": {
     "version": "1.0.0",
-    "generated": "2026-01-09T10:19:02.413Z",
-    "sha256": "94f9fd77ee114c673fd2109f5d073664b74d5dc71ccd09dd822be0cf184d9bdb"
+    "generated": "2026-01-09T11:31:41.727Z",
+    "sha256": "7d045ddbbfbd8336addf7cd894fa0f60964a0ce8bfdb98371ca69e147fc41c35"
   }
 }

@@ -297,14 +297,14 @@ export function validateTaskOverride(
     return {
       id: taskId,
       name: apiTask.name,
-      status: 'REMOVED_FROM_API',
-      stillNeeded: false,
+      status: 'NEEDED',
+      stillNeeded: true,
       details: [
         {
           field: 'disabled',
-          status: 'info',
+          status: 'check',
           message:
-            'Task still in API but marked as disabled - should be removed from API or override can be removed',
+            'disabled: task still present in API - verify removal from gameplay or keep override if intentional',
         },
       ],
     };
