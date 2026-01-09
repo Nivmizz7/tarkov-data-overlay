@@ -69,7 +69,7 @@ describe('listJson5Files', () => {
     const files = listJson5Files(overridesDir);
 
     expect(files).toContain('tasks.json5');
-    expect(files.every(f => f.endsWith('.json5'))).toBe(true);
+    expect(files.every((f) => f.endsWith('.json5'))).toBe(true);
   });
 
   it('lists JSON5 files in additions directory', () => {

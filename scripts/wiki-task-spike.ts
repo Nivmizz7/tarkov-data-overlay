@@ -5,12 +5,11 @@
  * Goal: validate wiki extraction feasibility for tasks.
  */
 
-import * as fs from "node:fs";
-import * as path from "node:path";
-import JSON5 from "json5";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import JSON5 from 'json5';
 
 import {
-  fetchTasks,
   findTaskById,
   printHeader,
   printProgress,
@@ -19,9 +18,9 @@ import {
   bold,
   dim,
   icons,
-} from "../src/lib/index.js";
+} from '../src/lib/index.js';
 
-import type { TaskData, TaskRequirement } from "../src/lib/types.js";
+import type { TaskData, TaskRequirement } from '../src/lib/types.js';
 
 /** Extended task data with rewards for comparison */
 type ExtendedTaskData = TaskData & {
@@ -30,10 +29,10 @@ type ExtendedTaskData = TaskData & {
     traderStanding?: Array<{ trader: { name: string }; standing: number }>;
     items?: Array<{ item: { name: string }; count: number }>;
   };
-  gameModes?: ("regular" | "pve")[];
+  gameModes?: ('regular' | 'pve')[];
 };
 
-type ApiObjective = NonNullable<TaskData["objectives"]>[number];
+type ApiObjective = NonNullable<TaskData['objectives']>[number];
 
 type WikiObjective = {
   text: string;
@@ -86,7 +85,7 @@ type WikiTaskData = {
   };
 };
 
-type GroupBy = "priority" | "category";
+type GroupBy = 'priority' | 'category';
 
 type CliOptions = {
   id?: string;
@@ -96,11 +95,11 @@ type CliOptions = {
   useCache?: boolean;
   refresh?: boolean;
   output?: string;
-  gameMode?: "regular" | "pve" | "both";
+  gameMode?: 'regular' | 'pve' | 'both';
   groupBy?: GroupBy;
 };
 
-type Priority = "high" | "medium" | "low";
+type Priority = 'high' | 'medium' | 'low';
 
 type Discrepancy = {
   taskId: string;
@@ -124,57 +123,57 @@ type Discrepancy = {
  */
 function getPriority(field: string): Priority {
   // Handle trader-specific reputation fields like "reputation.Prapor"
-  if (field.startsWith("reputation.")) {
-    return "medium";
+  if (field.startsWith('reputation.')) {
+    return 'medium';
   }
 
   switch (field) {
-    case "minPlayerLevel":
-    case "taskRequirements":
-    case "nextTasks":
-    case "objectives.description":
-      return "high";
-    case "reputation":
-    case "objectives.count":
-    case "objectives.maps":
-    case "objectives.items":
-    case "map":
-      return "medium";
-    case "experience":
-    case "money":
+    case 'minPlayerLevel':
+    case 'taskRequirements':
+    case 'nextTasks':
+    case 'objectives.description':
+      return 'high';
+    case 'reputation':
+    case 'objectives.count':
+    case 'objectives.maps':
+    case 'objectives.items':
+    case 'map':
+      return 'medium';
+    case 'experience':
+    case 'money':
     default:
-      return "low";
+      return 'low';
   }
 }
 
-const DEFAULT_TASK_NAME = "Grenadier";
-const WIKI_API = "https://escapefromtarkov.fandom.com/api.php";
-const TARKOV_API = "https://api.tarkov.dev/graphql";
+const DEFAULT_TASK_NAME = 'Grenadier';
+const WIKI_API = 'https://escapefromtarkov.fandom.com/api.php';
+const TARKOV_API = 'https://api.tarkov.dev/graphql';
 const RATE_LIMIT_MS = 500;
 
 // Tarkov 1.0 launch date - wiki edits after this are more trustworthy
-const TARKOV_1_0_LAUNCH = new Date("2025-11-15T00:00:00Z");
+const TARKOV_1_0_LAUNCH = new Date('2025-11-15T00:00:00Z');
 
 // Cache directories
-const CACHE_DIR = path.join(process.cwd(), "data", "cache");
-const WIKI_CACHE_DIR = path.join(CACHE_DIR, "wiki");
-const RESULTS_DIR = path.join(process.cwd(), "data", "results");
-const API_CACHE_FILE = path.join(CACHE_DIR, "tarkov-api-tasks.json");
+const CACHE_DIR = path.join(process.cwd(), 'data', 'cache');
+const WIKI_CACHE_DIR = path.join(CACHE_DIR, 'wiki');
+const RESULTS_DIR = path.join(process.cwd(), 'data', 'results');
+const API_CACHE_FILE = path.join(CACHE_DIR, 'tarkov-api-tasks.json');
 
 // Overlay file for filtering already-addressed discrepancies
 const TASKS_OVERLAY_FILE = path.join(
   process.cwd(),
-  "src",
-  "overrides",
-  "tasks.json5"
+  'src',
+  'overrides',
+  'tasks.json5'
 );
 
 // Suppressions file for discrepancies where wiki is wrong and API is correct
 const WIKI_INCORRECT_FILE = path.join(
   process.cwd(),
-  "src",
-  "suppressions",
-  "wiki-incorrect.json5"
+  'src',
+  'suppressions',
+  'wiki-incorrect.json5'
 );
 
 const EXTENDED_TASKS_QUERY = `
@@ -240,12 +239,12 @@ const EXTENDED_TASKS_QUERY = `
   }
 `;
 
-type GameMode = "regular" | "pve";
+type GameMode = 'regular' | 'pve';
 
 async function fetchTasksForMode(mode: GameMode): Promise<ExtendedTaskData[]> {
   const response = await fetch(TARKOV_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       query: EXTENDED_TASKS_QUERY,
       variables: { gameMode: mode },
@@ -263,7 +262,7 @@ async function fetchTasksForMode(mode: GameMode): Promise<ExtendedTaskData[]> {
 
   if (result.errors) {
     throw new Error(
-      `GraphQL errors: ${result.errors.map((e) => e.message).join(", ")}`
+      `GraphQL errors: ${result.errors.map((e) => e.message).join(', ')}`
     );
   }
 
@@ -277,16 +276,16 @@ async function fetchTasksForMode(mode: GameMode): Promise<ExtendedTaskData[]> {
  * Tasks with the same wikiLink are merged, tracking which modes they belong to.
  */
 async function fetchExtendedTasks(
-  gameMode: "regular" | "pve" | "both" = "both"
+  gameMode: 'regular' | 'pve' | 'both' = 'both'
 ): Promise<ExtendedTaskData[]> {
-  if (gameMode !== "both") {
+  if (gameMode !== 'both') {
     return fetchTasksForMode(gameMode);
   }
 
   // Fetch both modes
   const [regularTasks, pveTasks] = await Promise.all([
-    fetchTasksForMode("regular"),
-    fetchTasksForMode("pve"),
+    fetchTasksForMode('regular'),
+    fetchTasksForMode('pve'),
   ]);
 
   // Deduplicate by wikiLink, merging game modes
@@ -306,7 +305,7 @@ async function fetchExtendedTasks(
     const existing = byWikiLink.get(key);
     if (existing) {
       // Merge game modes
-      existing.gameModes = [...(existing.gameModes || []), "pve"];
+      existing.gameModes = [...(existing.gameModes || []), 'pve'];
     } else {
       byWikiLink.set(key, task);
     }
@@ -327,13 +326,13 @@ function ensureDir(dir: string): void {
 
 function getTimestamp(): string {
   const now = new Date();
-  return now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  return now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
 }
 
 type CacheMetadata = {
   fetchedAt: string;
   taskCount: number;
-  gameMode: "regular" | "pve" | "both";
+  gameMode: 'regular' | 'pve' | 'both';
 };
 
 type ApiCache = {
@@ -344,7 +343,7 @@ type ApiCache = {
 function loadApiCache(): ApiCache | null {
   if (!fs.existsSync(API_CACHE_FILE)) return null;
   try {
-    const data = JSON.parse(fs.readFileSync(API_CACHE_FILE, "utf-8"));
+    const data = JSON.parse(fs.readFileSync(API_CACHE_FILE, 'utf-8'));
     return data as ApiCache;
   } catch {
     return null;
@@ -353,7 +352,7 @@ function loadApiCache(): ApiCache | null {
 
 function saveApiCache(
   tasks: ExtendedTaskData[],
-  gameMode: "regular" | "pve" | "both"
+  gameMode: 'regular' | 'pve' | 'both'
 ): void {
   ensureDir(CACHE_DIR);
   const cache: ApiCache = {
@@ -386,7 +385,7 @@ function loadWikiCache(taskId: string): WikiCache | null {
   const cachePath = getWikiCachePath(taskId);
   if (!fs.existsSync(cachePath)) return null;
   try {
-    return JSON.parse(fs.readFileSync(cachePath, "utf-8")) as WikiCache;
+    return JSON.parse(fs.readFileSync(cachePath, 'utf-8')) as WikiCache;
   } catch {
     return null;
   }
@@ -396,7 +395,7 @@ function saveWikiCache(
   taskId: string,
   title: string,
   wikitext: string,
-  lastRevision?: WikiCache["lastRevision"]
+  lastRevision?: WikiCache['lastRevision']
 ): void {
   ensureDir(WIKI_CACHE_DIR);
   const cache: WikiCache = {
@@ -431,7 +430,7 @@ function loadSuppressedFields(): SuppressedFieldsResult {
   // Load overlay file (corrections where API was wrong)
   if (fs.existsSync(TASKS_OVERLAY_FILE)) {
     try {
-      const content = fs.readFileSync(TASKS_OVERLAY_FILE, "utf-8");
+      const content = fs.readFileSync(TASKS_OVERLAY_FILE, 'utf-8');
       const overlay = JSON5.parse(content) as Record<
         string,
         Record<string, unknown>
@@ -442,34 +441,34 @@ function loadSuppressedFields(): SuppressedFieldsResult {
           const beforeSize = suppressed.size;
 
           // Map overlay field names to discrepancy field names
-          if (field === "objectives") {
+          if (field === 'objectives') {
             const objectiveOverrides = (fields as Record<string, unknown>)[
               field
             ];
-            if (objectiveOverrides && typeof objectiveOverrides === "object") {
+            if (objectiveOverrides && typeof objectiveOverrides === 'object') {
               for (const objOverride of Object.values(
                 objectiveOverrides as Record<string, unknown>
               )) {
-                if (!objOverride || typeof objOverride !== "object") continue;
-                if ("count" in (objOverride as Record<string, unknown>)) {
+                if (!objOverride || typeof objOverride !== 'object') continue;
+                if ('count' in (objOverride as Record<string, unknown>)) {
                   suppressed.add(`${taskId}:objectives.count`);
                 }
-                if ("description" in (objOverride as Record<string, unknown>)) {
+                if ('description' in (objOverride as Record<string, unknown>)) {
                   suppressed.add(`${taskId}:objectives.description`);
                 }
-                if ("maps" in (objOverride as Record<string, unknown>)) {
+                if ('maps' in (objOverride as Record<string, unknown>)) {
                   suppressed.add(`${taskId}:objectives.maps`);
                 }
                 const itemOverrideKeys = [
-                  "items",
-                  "usingWeapon",
-                  "usingWeaponMods",
-                  "useAny",
-                  "containsAll",
-                  "markerItem",
-                  "questItem",
-                  "item",
-                  "requiredKeys",
+                  'items',
+                  'usingWeapon',
+                  'usingWeaponMods',
+                  'useAny',
+                  'containsAll',
+                  'markerItem',
+                  'questItem',
+                  'item',
+                  'requiredKeys',
                 ];
                 if (
                   itemOverrideKeys.some(
@@ -483,38 +482,38 @@ function loadSuppressedFields(): SuppressedFieldsResult {
               suppressed.add(`${taskId}:objectives.count`);
             }
           } else if (
-            field === "experience" ||
-            field === "minPlayerLevel" ||
-            field === "taskRequirements" ||
-            field === "reputation" ||
-            field === "money" ||
-            field === "finishRewards" ||
-            field === "map"
+            field === 'experience' ||
+            field === 'minPlayerLevel' ||
+            field === 'taskRequirements' ||
+            field === 'reputation' ||
+            field === 'money' ||
+            field === 'finishRewards' ||
+            field === 'map'
           ) {
             suppressed.add(`${taskId}:${field}`);
 
             if (
-              field === "finishRewards" &&
+              field === 'finishRewards' &&
               fields &&
-              typeof fields === "object"
+              typeof fields === 'object'
             ) {
               const finishRewards = (fields as Record<string, unknown>)[field];
-              if (finishRewards && typeof finishRewards === "object") {
+              if (finishRewards && typeof finishRewards === 'object') {
                 const rewards = finishRewards as Record<string, unknown>;
                 const items = Array.isArray(rewards.items) ? rewards.items : [];
                 const hasRoubles = items.some((item) => {
-                  if (!item || typeof item !== "object") return false;
+                  if (!item || typeof item !== 'object') return false;
                   const rewardItem = item as Record<string, unknown>;
                   const itemInfo = rewardItem.item as
                     | Record<string, unknown>
                     | undefined;
                   const itemName =
-                    typeof itemInfo?.name === "string" ? itemInfo.name : "";
+                    typeof itemInfo?.name === 'string' ? itemInfo.name : '';
                   const itemId =
-                    typeof itemInfo?.id === "string" ? itemInfo.id : "";
+                    typeof itemInfo?.id === 'string' ? itemInfo.id : '';
                   return (
-                    itemName === "Roubles" ||
-                    itemId === "5449016a4bdc2d6f028b456f"
+                    itemName === 'Roubles' ||
+                    itemId === '5449016a4bdc2d6f028b456f'
                   );
                 });
                 if (hasRoubles) {
@@ -525,13 +524,13 @@ function loadSuppressedFields(): SuppressedFieldsResult {
                   ? rewards.traderStanding
                   : [];
                 for (const entry of traderStanding) {
-                  if (!entry || typeof entry !== "object") continue;
+                  if (!entry || typeof entry !== 'object') continue;
                   const traderEntry = entry as Record<string, unknown>;
                   const trader = traderEntry.trader as
                     | Record<string, unknown>
                     | undefined;
                   const traderName =
-                    typeof trader?.name === "string" ? trader.name : "";
+                    typeof trader?.name === 'string' ? trader.name : '';
                   if (traderName) {
                     suppressed.add(`${taskId}:reputation.${traderName}`);
                   }
@@ -547,14 +546,14 @@ function loadSuppressedFields(): SuppressedFieldsResult {
         }
       }
     } catch (error) {
-      console.warn("Warning: Could not load overlay file:", error);
+      console.warn('Warning: Could not load overlay file:', error);
     }
   }
 
   // Load wiki-incorrect suppressions (where API is correct, wiki is wrong)
   if (fs.existsSync(WIKI_INCORRECT_FILE)) {
     try {
-      const content = fs.readFileSync(WIKI_INCORRECT_FILE, "utf-8");
+      const content = fs.readFileSync(WIKI_INCORRECT_FILE, 'utf-8');
       const suppressions = JSON5.parse(content) as Record<string, string[]>;
 
       for (const [taskId, fields] of Object.entries(suppressions)) {
@@ -566,7 +565,7 @@ function loadSuppressedFields(): SuppressedFieldsResult {
         }
       }
     } catch (error) {
-      console.warn("Warning: Could not load wiki-incorrect file:", error);
+      console.warn('Warning: Could not load wiki-incorrect file:', error);
     }
   }
 
@@ -579,21 +578,21 @@ function loadTaskRequirementOverrides(): Map<string, TaskRequirement[]> {
   if (!fs.existsSync(TASKS_OVERLAY_FILE)) return overrides;
 
   try {
-    const content = fs.readFileSync(TASKS_OVERLAY_FILE, "utf-8");
+    const content = fs.readFileSync(TASKS_OVERLAY_FILE, 'utf-8');
     const overlay = JSON5.parse(content) as Record<
       string,
       Record<string, unknown>
     >;
 
     for (const [taskId, fields] of Object.entries(overlay)) {
-      if (!fields || typeof fields !== "object") continue;
+      if (!fields || typeof fields !== 'object') continue;
       const reqs = (fields as Record<string, unknown>).taskRequirements;
       if (Array.isArray(reqs)) {
         overrides.set(taskId, reqs as TaskRequirement[]);
       }
     }
   } catch (error) {
-    console.warn("Warning: Could not load task requirement overrides:", error);
+    console.warn('Warning: Could not load task requirement overrides:', error);
   }
 
   return overrides;
@@ -631,98 +630,98 @@ function parseArgs(argv: string[]): CliOptions & { help?: boolean } {
     const arg = argv[i];
 
     if (!arg) continue;
-    if (arg === "--help" || arg === "-h") {
+    if (arg === '--help' || arg === '-h') {
       options.help = true;
       continue;
     }
 
-    if (arg === "--all" || arg === "-a") {
+    if (arg === '--all' || arg === '-a') {
       options.all = true;
       continue;
     }
 
-    if (arg.startsWith("--id=")) {
-      options.id = arg.slice("--id=".length);
+    if (arg.startsWith('--id=')) {
+      options.id = arg.slice('--id='.length);
       continue;
     }
-    if (arg === "--id") {
+    if (arg === '--id') {
       options.id = argv[i + 1];
       i += 1;
       continue;
     }
 
-    if (arg.startsWith("--name=")) {
-      options.name = arg.slice("--name=".length);
+    if (arg.startsWith('--name=')) {
+      options.name = arg.slice('--name='.length);
       continue;
     }
-    if (arg === "--name") {
+    if (arg === '--name') {
       options.name = argv[i + 1];
       i += 1;
       continue;
     }
 
-    if (arg.startsWith("--wiki=")) {
-      options.wiki = arg.slice("--wiki=".length);
+    if (arg.startsWith('--wiki=')) {
+      options.wiki = arg.slice('--wiki='.length);
       continue;
     }
-    if (arg === "--wiki") {
+    if (arg === '--wiki') {
       options.wiki = argv[i + 1];
       i += 1;
       continue;
     }
 
-    if (arg === "--cache" || arg === "-c") {
+    if (arg === '--cache' || arg === '-c') {
       options.useCache = true;
       continue;
     }
 
-    if (arg === "--refresh" || arg === "-r") {
+    if (arg === '--refresh' || arg === '-r') {
       options.refresh = true;
       continue;
     }
 
-    if (arg.startsWith("--gameMode=")) {
-      const mode = arg.slice("--gameMode=".length);
-      if (mode === "regular" || mode === "pve" || mode === "both") {
+    if (arg.startsWith('--gameMode=')) {
+      const mode = arg.slice('--gameMode='.length);
+      if (mode === 'regular' || mode === 'pve' || mode === 'both') {
         options.gameMode = mode;
       }
       continue;
     }
-    if (arg === "--gameMode" || arg === "-g") {
+    if (arg === '--gameMode' || arg === '-g') {
       const mode = argv[i + 1];
-      if (mode === "regular" || mode === "pve" || mode === "both") {
+      if (mode === 'regular' || mode === 'pve' || mode === 'both') {
         options.gameMode = mode;
         i += 1;
       }
       continue;
     }
 
-    if (arg.startsWith("--output=")) {
-      options.output = arg.slice("--output=".length);
+    if (arg.startsWith('--output=')) {
+      options.output = arg.slice('--output='.length);
       continue;
     }
-    if (arg === "--output" || arg === "-o") {
+    if (arg === '--output' || arg === '-o') {
       // Check if next arg exists and isn't a flag
       const nextArg = argv[i + 1];
-      if (nextArg && !nextArg.startsWith("-")) {
+      if (nextArg && !nextArg.startsWith('-')) {
         options.output = nextArg;
         i += 1;
       } else {
-        options.output = ""; // Empty string means auto-generate filename
+        options.output = ''; // Empty string means auto-generate filename
       }
       continue;
     }
 
-    if (arg.startsWith("--group-by=")) {
-      const groupBy = arg.slice("--group-by=".length);
-      if (groupBy === "priority" || groupBy === "category") {
+    if (arg.startsWith('--group-by=')) {
+      const groupBy = arg.slice('--group-by='.length);
+      if (groupBy === 'priority' || groupBy === 'category') {
         options.groupBy = groupBy;
       }
       continue;
     }
-    if (arg === "--group-by") {
+    if (arg === '--group-by') {
       const groupBy = argv[i + 1];
-      if (groupBy === "priority" || groupBy === "category") {
+      if (groupBy === 'priority' || groupBy === 'category') {
         options.groupBy = groupBy;
         i += 1;
       }
@@ -738,35 +737,35 @@ function parseArgs(argv: string[]): CliOptions & { help?: boolean } {
 }
 
 function printUsage(): void {
-  console.log("Usage:");
-  console.log("  tsx scripts/wiki-task-spike.ts [options] [taskName]");
+  console.log('Usage:');
+  console.log('  tsx scripts/wiki-task-spike.ts [options] [taskName]');
   console.log();
-  console.log("Options:");
-  console.log("  --all, -a          Compare all tasks (bulk mode)");
-  console.log("  --cache, -c        Use cached data if available");
-  console.log("  --refresh, -r      Force refresh cache (fetch new data)");
+  console.log('Options:');
+  console.log('  --all, -a          Compare all tasks (bulk mode)');
+  console.log('  --cache, -c        Use cached data if available');
+  console.log('  --refresh, -r      Force refresh cache (fetch new data)');
   console.log(
-    "  --output, -o       Save results to file (auto-generates timestamp name)"
+    '  --output, -o       Save results to file (auto-generates timestamp name)'
   );
   console.log(
-    "  --group-by <type>  Group output by: priority or category (default: category)"
+    '  --group-by <type>  Group output by: priority or category (default: category)'
   );
   console.log(
-    "  --gameMode, -g     Game mode: regular (PVP), pve, or both (default: both)"
+    '  --gameMode, -g     Game mode: regular (PVP), pve, or both (default: both)'
   );
-  console.log("  --id <taskId>      Find task by ID");
-  console.log("  --name <taskName>  Find task by name");
-  console.log("  --wiki <pageTitle> Override wiki page title");
-  console.log("  --help, -h         Show this help");
+  console.log('  --id <taskId>      Find task by ID');
+  console.log('  --name <taskName>  Find task by name');
+  console.log('  --wiki <pageTitle> Override wiki page title');
+  console.log('  --help, -h         Show this help');
   console.log();
-  console.log("Examples:");
-  console.log("  tsx scripts/wiki-task-spike.ts Grenadier");
-  console.log("  tsx scripts/wiki-task-spike.ts --all --cache");
+  console.log('Examples:');
+  console.log('  tsx scripts/wiki-task-spike.ts Grenadier');
+  console.log('  tsx scripts/wiki-task-spike.ts --all --cache');
   console.log(
-    "  tsx scripts/wiki-task-spike.ts --all --cache --group-by=priority"
+    '  tsx scripts/wiki-task-spike.ts --all --cache --group-by=priority'
   );
-  console.log("  tsx scripts/wiki-task-spike.ts --all --refresh --output");
-  console.log("  tsx scripts/wiki-task-spike.ts --all --gameMode=pve --cache");
+  console.log('  tsx scripts/wiki-task-spike.ts --all --refresh --output');
+  console.log('  tsx scripts/wiki-task-spike.ts --all --gameMode=pve --cache');
   console.log();
 }
 
@@ -783,13 +782,13 @@ function normalizeTaskName(value: string): string {
       .trim()
       .toLowerCase()
       // Remove [PVP ZONE] suffix
-      .replace(/\s*\[pvp zone\]\s*$/i, "")
+      .replace(/\s*\[pvp zone\]\s*$/i, '')
       // Remove (quest) disambiguation suffix
-      .replace(/\s*\(quest\)\s*$/i, "")
+      .replace(/\s*\(quest\)\s*$/i, '')
       // Normalize hyphens to spaces for comparison
-      .replace(/-/g, " ")
+      .replace(/-/g, ' ')
       // Collapse multiple spaces
-      .replace(/\s+/g, " ")
+      .replace(/\s+/g, ' ')
       .trim()
   );
 }
@@ -835,10 +834,10 @@ type WikiFetchResult = {
 async function fetchWikiWikitext(pageTitle: string): Promise<WikiFetchResult> {
   // Fetch wikitext
   const parseParams = new URLSearchParams({
-    action: "parse",
+    action: 'parse',
     page: pageTitle,
-    prop: "wikitext",
-    format: "json",
+    prop: 'wikitext',
+    format: 'json',
   });
 
   const parseResponse = await fetch(`${WIKI_API}?${parseParams.toString()}`);
@@ -851,7 +850,7 @@ async function fetchWikiWikitext(pageTitle: string): Promise<WikiFetchResult> {
   const parseData = (await parseResponse.json()) as {
     parse?: {
       title?: string;
-      wikitext?: { "*": string };
+      wikitext?: { '*': string };
     };
     error?: { info?: string };
   };
@@ -860,24 +859,24 @@ async function fetchWikiWikitext(pageTitle: string): Promise<WikiFetchResult> {
     throw new Error(`Wiki error: ${parseData.error.info}`);
   }
 
-  const wikitext = parseData.parse?.wikitext?.["*"];
+  const wikitext = parseData.parse?.wikitext?.['*'];
   if (!wikitext) {
-    throw new Error("Wiki response missing wikitext");
+    throw new Error('Wiki response missing wikitext');
   }
 
   const title = parseData.parse?.title ?? pageTitle;
 
   // Fetch last revision info
   const revParams = new URLSearchParams({
-    action: "query",
+    action: 'query',
     titles: title,
-    prop: "revisions",
-    rvprop: "timestamp|user|comment",
-    rvlimit: "1",
-    format: "json",
+    prop: 'revisions',
+    rvprop: 'timestamp|user|comment',
+    rvlimit: '1',
+    format: 'json',
   });
 
-  let lastRevision: WikiFetchResult["lastRevision"];
+  let lastRevision: WikiFetchResult['lastRevision'];
   try {
     const revResponse = await fetch(`${WIKI_API}?${revParams.toString()}`);
     if (revResponse.ok) {
@@ -903,8 +902,8 @@ async function fetchWikiWikitext(pageTitle: string): Promise<WikiFetchResult> {
         if (rev?.timestamp) {
           lastRevision = {
             timestamp: rev.timestamp,
-            user: rev.user ?? "unknown",
-            comment: rev.comment ?? "",
+            user: rev.user ?? 'unknown',
+            comment: rev.comment ?? '',
           };
         }
       }
@@ -917,14 +916,14 @@ async function fetchWikiWikitext(pageTitle: string): Promise<WikiFetchResult> {
 }
 
 function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function extractSectionLines(wikitext: string, heading: string): string[] {
-  const lines = wikitext.split("\n");
+  const lines = wikitext.split('\n');
   const headingRegex = new RegExp(
     `^==\\s*${escapeRegExp(heading)}\\s*==\\s*$`,
-    "i"
+    'i'
   );
   const startIndex = lines.findIndex((line) => headingRegex.test(line.trim()));
   if (startIndex === -1) return [];
@@ -932,10 +931,10 @@ function extractSectionLines(wikitext: string, heading: string): string[] {
   const items: string[] = [];
   for (let i = startIndex + 1; i < lines.length; i += 1) {
     const raw = lines[i].trim();
-    if (raw.startsWith("==")) break;
+    if (raw.startsWith('==')) break;
     // Capture bullet points
-    if (raw.startsWith("*")) {
-      items.push(raw.replace(/^\*+\s*/, ""));
+    if (raw.startsWith('*')) {
+      items.push(raw.replace(/^\*+\s*/, ''));
       continue;
     }
     // Also capture Note lines (for PvE/PvP differences)
@@ -949,76 +948,76 @@ function extractSectionLines(wikitext: string, heading: string): string[] {
 
 function stripWikiMarkup(value: string): string {
   return value
-    .replace(/<[^>]+>/g, "")
-    .replace(/''+/g, "")
-    .replace(/\[\[(?:[^|\]]*\|)?([^\]]+)\]\]/g, "$1")
-    .replace(/\s+/g, " ")
+    .replace(/<[^>]+>/g, '')
+    .replace(/''+/g, '')
+    .replace(/\[\[(?:[^|\]]*\|)?([^\]]+)\]\]/g, '$1')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
 function normalizeWhitespace(value: string): string {
-  return value.replace(/\s+/g, " ").trim();
+  return value.replace(/\s+/g, ' ').trim();
 }
 
 function normalizeCyrillic(value: string): string {
   // Replace Cyrillic characters commonly mistaken for Latin ones (e.g., PMСs).
-  return value.replace(/[\u0421\u0441]/g, "c");
+  return value.replace(/[\u0421\u0441]/g, 'c');
 }
 
 function normalizeObjectiveText(value: string): string {
   const normalizedTimes = normalizeCyrillic(value).replace(
     /\b0(\d):(\d{2})\b/g,
-    "$1:$2"
+    '$1:$2'
   );
   return normalizeWhitespace(
     stripWikiMarkup(normalizedTimes)
       .toLowerCase()
-      .replace(/[’']/g, "")
-      .replace(/[^a-z0-9]+/gi, " ")
-      .replace(/\b(all over|throughout)\s+the\s+tarkov\s+territory\b/g, " ")
-      .replace(/\bover\s+(the\s+)?tarkov\s+territory\b/g, " ")
-      .replace(/\bon\s+any\s+(location|map)\b/g, " ")
-      .replace(/\bany\s+location\b/g, " ")
-      .replace(/\bon\s+(the\s+)?location\b/g, " ")
-      .replace(/\bfind a way (inside|into)\b/g, "enter")
-      .replace(/\bone of\b/g, " ")
-      .replace(/\b(the|a|an|any|all)\b/g, " ")
-      .replace(/\bskill level of \d+\b/g, "skill level")
+      .replace(/[’']/g, '')
+      .replace(/[^a-z0-9]+/gi, ' ')
+      .replace(/\b(all over|throughout)\s+the\s+tarkov\s+territory\b/g, ' ')
+      .replace(/\bover\s+(the\s+)?tarkov\s+territory\b/g, ' ')
+      .replace(/\bon\s+any\s+(location|map)\b/g, ' ')
+      .replace(/\bany\s+location\b/g, ' ')
+      .replace(/\bon\s+(the\s+)?location\b/g, ' ')
+      .replace(/\bfind a way (inside|into)\b/g, 'enter')
+      .replace(/\bone of\b/g, ' ')
+      .replace(/\b(the|a|an|any|all)\b/g, ' ')
+      .replace(/\bskill level of \d+\b/g, 'skill level')
       .replace(
         /\brequired\s+\d+\s+([a-z]+)\s+skill\s+level\b/g,
-        "required $1 skill level"
+        'required $1 skill level'
       )
-      .replace(/\blocate and check\b/g, "locate")
-      .replace(/\blocate and obtain\b/g, "obtain")
-      .replace(/\blocate and mark\b/g, "mark")
-      .replace(/\blocate and neutralize\b/g, "eliminate")
-      .replace(/\blocate and eliminate\b/g, "eliminate")
-      .replace(/\bneutralize\b/g, "eliminate")
-      .replace(/\bkill\b/g, "eliminate")
-      .replace(/\bget into\b/g, "enter")
-      .replace(/\bfind\b/g, "locate")
-      .replace(/\bwhile using\b/g, "using")
-      .replace(/\bwith\b/g, "using")
+      .replace(/\blocate and check\b/g, 'locate')
+      .replace(/\blocate and obtain\b/g, 'obtain')
+      .replace(/\blocate and mark\b/g, 'mark')
+      .replace(/\blocate and neutralize\b/g, 'eliminate')
+      .replace(/\blocate and eliminate\b/g, 'eliminate')
+      .replace(/\bneutralize\b/g, 'eliminate')
+      .replace(/\bkill\b/g, 'eliminate')
+      .replace(/\bget into\b/g, 'enter')
+      .replace(/\bfind\b/g, 'locate')
+      .replace(/\bwhile using\b/g, 'using')
+      .replace(/\bwith\b/g, 'using')
       .replace(
         /\b([a-z]{2,4}\s?\d{1,3}[a-z0-9]*)\s+series\s+assault\s+rifle\b/g,
-        "$1"
+        '$1'
       )
-      .replace(/\bbunkhouses\b/g, "bunkhouse")
-      .replace(/\band\b/g, " ")
-      .replace(/\bthat\b/g, " ")
-      .replace(/\b(is|are|was|were)\b/g, " ")
-      .replace(/\baway\b/g, " ")
-      .replace(/\boptional\b/g, " ")
-      .replace(/\bfound in raid items?\b/g, "found in raid")
-      .replace(/\bhand grenades?\b/g, "grenades")
-      .replace(/\bscav\s+(bosses?|raiders?)\b/g, "$1")
+      .replace(/\bbunkhouses\b/g, 'bunkhouse')
+      .replace(/\band\b/g, ' ')
+      .replace(/\bthat\b/g, ' ')
+      .replace(/\b(is|are|was|were)\b/g, ' ')
+      .replace(/\baway\b/g, ' ')
+      .replace(/\boptional\b/g, ' ')
+      .replace(/\bfound in raid items?\b/g, 'found in raid')
+      .replace(/\bhand grenades?\b/g, 'grenades')
+      .replace(/\bscav\s+(bosses?|raiders?)\b/g, '$1')
       .replace(
         /\bto\s+(prapor|therapist|skier|peacekeeper|mechanic|ragman|jaeger|fence|lightkeeper|ref)\b/g,
-        " "
+        ' '
       )
-      .replace(/\bpmc operatives?\b/g, "pmc")
-      .replace(/\bpmcs\b/g, "pmc")
-      .replace(/\benemies?\b/g, "target")
+      .replace(/\bpmc operatives?\b/g, 'pmc')
+      .replace(/\bpmcs\b/g, 'pmc')
+      .replace(/\benemies?\b/g, 'target')
   );
 }
 
@@ -1060,22 +1059,22 @@ function objectiveHasCategoryItemRequirement(text: string): boolean {
 function stripCountPhrases(value: string): string {
   const normalizedValue = normalizeCyrillic(value);
   const countWords =
-    "(times?|kills?|targets?|pmcs?|scavs?|operatives?|headshots?|shots?|enemies?|guards?|bosses?|matches?|raiders?|rogues?|snipers?|dogtags?|tags?)";
+    '(times?|kills?|targets?|pmcs?|scavs?|operatives?|headshots?|shots?|enemies?|guards?|bosses?|matches?|raiders?|rogues?|snipers?|dogtags?|tags?)';
   const verbCounts =
-    "(find|hand over|handover|turn in|submit|deliver|give|bring|obtain|collect|stash|sell|win)";
+    '(find|hand over|handover|turn in|submit|deliver|give|bring|obtain|collect|stash|sell|win)';
   const numberWordMap: Record<string, string> = {
-    one: "1",
-    two: "2",
-    three: "3",
-    four: "4",
-    five: "5",
-    six: "6",
-    seven: "7",
-    eight: "8",
-    nine: "9",
-    ten: "10",
-    eleven: "11",
-    twelve: "12",
+    one: '1',
+    two: '2',
+    three: '3',
+    four: '4',
+    five: '5',
+    six: '6',
+    seven: '7',
+    eight: '8',
+    nine: '9',
+    ten: '10',
+    eleven: '11',
+    twelve: '12',
   };
   const normalizedNumbers = normalizedValue.replace(
     /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/gi,
@@ -1083,46 +1082,46 @@ function stripCountPhrases(value: string): string {
   );
 
   return normalizedNumbers
-    .replace(/\bwin\b\s+\d+\s+out\s+of\s+\d+\b/gi, "win")
-    .replace(/\b\d+\s+times?\b/gi, "")
-    .replace(/\b\d+\s+of\b/gi, "")
+    .replace(/\bwin\b\s+\d+\s+out\s+of\s+\d+\b/gi, 'win')
+    .replace(/\b\d+\s+times?\b/gi, '')
+    .replace(/\b\d+\s+of\b/gi, '')
     .replace(
-      new RegExp(`\\b\\d+\\b\\s+((?:[a-z]+\\s+){0,2}${countWords})\\b`, "gi"),
-      "$1"
+      new RegExp(`\\b\\d+\\b\\s+((?:[a-z]+\\s+){0,2}${countWords})\\b`, 'gi'),
+      '$1'
     )
-    .replace(new RegExp(`\\b${countWords}\\b\\s*\\d+\\b`, "gi"), "$1")
-    .replace(new RegExp(`\\b(item|items)\\b\\s*:\\s*\\d+\\b`, "gi"), "$1:")
+    .replace(new RegExp(`\\b${countWords}\\b\\s*\\d+\\b`, 'gi'), '$1')
+    .replace(new RegExp(`\\b(item|items)\\b\\s*:\\s*\\d+\\b`, 'gi'), '$1:')
     .replace(
-      new RegExp(`\\b${verbCounts}\\b\\s+(?:any\\s+)?(the\\s+)?\\d+\\b`, "gi"),
-      (_match, verb, article) => `${verb} ${article ?? ""}`.trim()
+      new RegExp(`\\b${verbCounts}\\b\\s+(?:any\\s+)?(the\\s+)?\\d+\\b`, 'gi'),
+      (_match, verb, article) => `${verb} ${article ?? ''}`.trim()
     )
     .replace(
       /\b(sell)\b\s+(prapor|therapist|skier|peacekeeper|mechanic|ragman|jaeger|fence|lightkeeper|ref)\s+(?:any\s+)?\d+\b/gi,
-      "$1 $2"
+      '$1 $2'
     )
-    .replace(/\s+/g, " ")
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
 function singularizeCountWords(value: string): string {
   return value
-    .replace(/\btimes\b/g, "time")
-    .replace(/\bkills\b/g, "kill")
-    .replace(/\btargets\b/g, "target")
-    .replace(/\bpmcs\b/g, "pmc")
-    .replace(/\bscavs\b/g, "scav")
-    .replace(/\boperatives\b/g, "operative")
-    .replace(/\bheadshots\b/g, "headshot")
-    .replace(/\bshots\b/g, "shot")
-    .replace(/\benemies\b/g, "enemy")
-    .replace(/\bguards\b/g, "guard")
-    .replace(/\bbosses\b/g, "boss")
-    .replace(/\bmatches\b/g, "match")
-    .replace(/\braiders\b/g, "raider")
-    .replace(/\brogues\b/g, "rogue")
-    .replace(/\bsnipers\b/g, "sniper")
-    .replace(/\bdogtags\b/g, "dogtag")
-    .replace(/\btags\b/g, "tag");
+    .replace(/\btimes\b/g, 'time')
+    .replace(/\bkills\b/g, 'kill')
+    .replace(/\btargets\b/g, 'target')
+    .replace(/\bpmcs\b/g, 'pmc')
+    .replace(/\bscavs\b/g, 'scav')
+    .replace(/\boperatives\b/g, 'operative')
+    .replace(/\bheadshots\b/g, 'headshot')
+    .replace(/\bshots\b/g, 'shot')
+    .replace(/\benemies\b/g, 'enemy')
+    .replace(/\bguards\b/g, 'guard')
+    .replace(/\bbosses\b/g, 'boss')
+    .replace(/\bmatches\b/g, 'match')
+    .replace(/\braiders\b/g, 'raider')
+    .replace(/\brogues\b/g, 'rogue')
+    .replace(/\bsnipers\b/g, 'sniper')
+    .replace(/\bdogtags\b/g, 'dogtag')
+    .replace(/\btags\b/g, 'tag');
 }
 
 function normalizeObjectiveMatchKey(value: string): string {
@@ -1135,9 +1134,9 @@ function normalizeMapName(value: string): string {
   return value
     .trim()
     .toLowerCase()
-    .replace(/\bnight factory\b/g, "factory")
-    .replace(/\s+21\+/g, "")
-    .replace(/\s+/g, " ")
+    .replace(/\bnight factory\b/g, 'factory')
+    .replace(/\s+21\+/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -1145,9 +1144,9 @@ function normalizeItemName(value: string): string {
   return value
     .trim()
     .toLowerCase()
-    .replace(/^#+/, "")
-    .replace(/#(?=\d)/g, "")
-    .replace(/\s+/g, " ")
+    .replace(/^#+/, '')
+    .replace(/#(?=\d)/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -1156,102 +1155,102 @@ function uniqueList(values: string[]): string[] {
 }
 
 const WIKI_ITEM_EXCLUSIONS = new Set([
-  "found in raid",
-  "in raid",
-  "fi r",
-  "weapon",
-  "weapons",
-  "assault rifles",
-  "sniper rifles",
-  "bolt-action rifles",
-  "melee weapon",
-  "melee weapons",
-  "grenade",
-  "grenades",
-  "grenade launcher",
-  "grenade launchers",
-  "dmrs",
-  "smgs",
-  "lmgs",
-  "shotguns",
-  "pistols",
-  "usec",
-  "bear",
-  "pmc",
-  "pmcs",
-  "scav",
-  "scavs",
-  "boss",
-  "bosses",
-  "rogues",
-  "raiders",
-  "scav raiders",
-  "glukhar",
-  "killa",
-  "vengeful killa",
-  "reshala",
-  "shturman",
-  "tagilla",
-  "shadow of tagilla",
-  "sanitar",
-  "kaban",
-  "kollontay",
-  "basmach",
-  "gus",
-  "partisan",
-  "goons",
-  "minotaur",
-  "zryachiy",
-  "birdeye",
-  "big pipe",
-  "knight",
-  "medical",
-  "medicine",
-  "meds",
-  "medication",
-  "backpack",
-  "backpacks",
-  "tactical rig",
-  "tactical rigs",
-  "chest rig",
-  "chest rigs",
-  "plate carrier",
-  "plate carriers",
-  "armored rig",
-  "armored rigs",
-  "body armor",
-  "body armour",
-  "helmet",
-  "helmets",
-  "armor plate",
-  "armor plates",
-  "ballistic plate",
-  "ballistic plates",
-  "weapon mods",
-  "weapon_mods",
-  "search",
-  "stress resistance",
-  "strength",
-  "endurance",
-  "metabolism",
-  "immunity",
-  "intellect",
-  "attention",
-  "perception",
-  "memory",
-  "charisma",
-  "health",
-  "prapor",
-  "therapist",
-  "skier",
-  "peacekeeper",
-  "mechanic",
-  "ragman",
-  "jaeger",
-  "fence",
-  "lightkeeper",
-  "ref",
-  "arena",
+  'found in raid',
+  'in raid',
+  'fi r',
+  'weapon',
+  'weapons',
+  'assault rifles',
+  'sniper rifles',
+  'bolt-action rifles',
+  'melee weapon',
+  'melee weapons',
+  'grenade',
+  'grenades',
+  'grenade launcher',
+  'grenade launchers',
+  'dmrs',
+  'smgs',
+  'lmgs',
+  'shotguns',
+  'pistols',
+  'usec',
+  'bear',
+  'pmc',
+  'pmcs',
+  'scav',
+  'scavs',
+  'boss',
+  'bosses',
+  'rogues',
+  'raiders',
+  'scav raiders',
+  'glukhar',
+  'killa',
+  'vengeful killa',
+  'reshala',
+  'shturman',
+  'tagilla',
+  'shadow of tagilla',
+  'sanitar',
+  'kaban',
+  'kollontay',
+  'basmach',
+  'gus',
+  'partisan',
+  'goons',
+  'minotaur',
+  'zryachiy',
+  'birdeye',
+  'big pipe',
+  'knight',
+  'medical',
+  'medicine',
+  'meds',
+  'medication',
+  'backpack',
+  'backpacks',
+  'tactical rig',
+  'tactical rigs',
+  'chest rig',
+  'chest rigs',
+  'plate carrier',
+  'plate carriers',
+  'armored rig',
+  'armored rigs',
+  'body armor',
+  'body armour',
+  'helmet',
+  'helmets',
+  'armor plate',
+  'armor plates',
+  'ballistic plate',
+  'ballistic plates',
+  'weapon mods',
+  'weapon_mods',
+  'search',
+  'stress resistance',
+  'strength',
+  'endurance',
+  'metabolism',
+  'immunity',
+  'intellect',
+  'attention',
+  'perception',
+  'memory',
+  'charisma',
+  'health',
+  'prapor',
+  'therapist',
+  'skier',
+  'peacekeeper',
+  'mechanic',
+  'ragman',
+  'jaeger',
+  'fence',
+  'lightkeeper',
+  'ref',
+  'arena',
 ]);
 
 function isExcludedWikiItem(value: string): boolean {
@@ -1299,22 +1298,22 @@ function getObjectiveVerbKey(text: string): string | undefined {
       normalized
     )
   ) {
-    return "hand_over";
+    return 'hand_over';
   }
   if (/\bfind\b|\bloc(at|ate)\b|\bobtain\b|\bcollect\b/.test(normalized)) {
-    return "find";
+    return 'find';
   }
   if (/\bmark\b|\bplace\b|\bplant\b|\binstall\b|\bstash\b/.test(normalized)) {
-    return "mark";
+    return 'mark';
   }
   if (/\buse\b|\butilize\b/.test(normalized)) {
-    return "use";
+    return 'use';
   }
   if (/\beliminate\b|\bkill\b|\bshoot\b/.test(normalized)) {
-    return "eliminate";
+    return 'eliminate';
   }
   if (/\bextract\b|\bsurvive\b|\bescape\b/.test(normalized)) {
-    return "extract";
+    return 'extract';
   }
   return undefined;
 }
@@ -1325,8 +1324,8 @@ function normalizeItemAliases(item: ObjectiveItemRef): string[] {
   const aliases: string[] = [];
   if (item.name) aliases.push(normalizeItemName(item.name));
   if (item.shortName) aliases.push(normalizeItemName(item.shortName));
-  if (item.name && /dogtag/i.test(item.name)) aliases.push("dogtag");
-  if (item.shortName && /dogtag/i.test(item.shortName)) aliases.push("dogtag");
+  if (item.name && /dogtag/i.test(item.name)) aliases.push('dogtag');
+  if (item.shortName && /dogtag/i.test(item.shortName)) aliases.push('dogtag');
   return uniqueList(aliases);
 }
 
@@ -1347,7 +1346,7 @@ function normalizeItemAliasesWithContext(
 
   if (suffix.includes(contextKey)) {
     const stripped = normalizeItemName(
-      item.name.replace(/\s*\([^)]+\)\s*$/, "")
+      item.name.replace(/\s*\([^)]+\)\s*$/, '')
     );
     if (stripped.length > 0) aliases.push(stripped);
   }
@@ -1358,7 +1357,7 @@ function normalizeItemAliasesWithContext(
 function normalizeWikiItemAliases(item: string, context?: string): string[] {
   const aliases = [normalizeItemName(item)];
   if (/\(quest item\)/i.test(item)) {
-    const stripped = normalizeItemName(item.replace(/\s*\([^)]+\)\s*$/, ""));
+    const stripped = normalizeItemName(item.replace(/\s*\([^)]+\)\s*$/, ''));
     if (stripped.length > 0) aliases.push(stripped);
   }
   if (!context) return aliases;
@@ -1370,7 +1369,7 @@ function normalizeWikiItemAliases(item: string, context?: string): string[] {
   if (!match || !match[1]) return aliases;
   const suffix = normalizeItemName(match[1]);
   if (suffix.includes(contextKey)) {
-    const stripped = normalizeItemName(item.replace(/\s*\([^)]+\)\s*$/, ""));
+    const stripped = normalizeItemName(item.replace(/\s*\([^)]+\)\s*$/, ''));
     if (stripped.length > 0) aliases.push(stripped);
   }
 
@@ -1463,24 +1462,24 @@ function buildMapAliasMap(mapNames: string[]): Map<string, string> {
 
   for (const name of mapNames) {
     addAlias(name, name);
-    if (name.toLowerCase().startsWith("the ")) {
+    if (name.toLowerCase().startsWith('the ')) {
       addAlias(name.slice(4), name);
     }
-    if (name.toLowerCase().endsWith(" of tarkov")) {
-      addAlias(name.replace(/\s+of tarkov$/i, ""), name);
+    if (name.toLowerCase().endsWith(' of tarkov')) {
+      addAlias(name.replace(/\s+of tarkov$/i, ''), name);
     }
   }
 
   // Common shorthand
-  if (mapNames.some((n) => n.toLowerCase() === "the lab")) {
-    addAlias("lab", "The Lab");
-    addAlias("laboratory", "The Lab");
+  if (mapNames.some((n) => n.toLowerCase() === 'the lab')) {
+    addAlias('lab', 'The Lab');
+    addAlias('laboratory', 'The Lab');
   }
-  if (mapNames.some((n) => n.toLowerCase() === "streets of tarkov")) {
-    addAlias("streets", "Streets of Tarkov");
+  if (mapNames.some((n) => n.toLowerCase() === 'streets of tarkov')) {
+    addAlias('streets', 'Streets of Tarkov');
   }
-  if (mapNames.some((n) => n.toLowerCase() === "ground zero")) {
-    addAlias("gz", "Ground Zero");
+  if (mapNames.some((n) => n.toLowerCase() === 'ground zero')) {
+    addAlias('gz', 'Ground Zero');
   }
 
   return aliasMap;
@@ -1493,10 +1492,10 @@ function extractWikiLinkData(line: string): WikiLink[] {
   while (match) {
     const target = match[1]?.trim();
     if (target && !/^(File|Category):/i.test(target)) {
-      const cleanedTarget = stripWikiMarkup(target.split("#")[0]);
+      const cleanedTarget = stripWikiMarkup(target.split('#')[0]);
       const displayRaw = match[2]?.trim();
       const cleanedDisplay = displayRaw
-        ? stripWikiMarkup(displayRaw.split("#")[0])
+        ? stripWikiMarkup(displayRaw.split('#')[0])
         : undefined;
       results.push({ target: cleanedTarget, display: cleanedDisplay });
     }
@@ -1517,8 +1516,8 @@ function isExcludedMapMention(text: string, mapName: string): boolean {
   const clauseRegex = /\b(excluding|except)\b([^.)]*)/gi;
   let match = clauseRegex.exec(normalized);
   while (match) {
-    const clause = match[2] ?? "";
-    const mapRegex = new RegExp(`\\b${escapeRegExp(map)}\\b`, "i");
+    const clause = match[2] ?? '';
+    const mapRegex = new RegExp(`\\b${escapeRegExp(map)}\\b`, 'i');
     if (mapRegex.test(clause)) return true;
     match = clauseRegex.exec(normalized);
   }
@@ -1533,15 +1532,15 @@ function extractMapsFromText(
   const results = new Set<string>();
   for (const [alias, canonical] of aliasMap.entries()) {
     if (isExcludedMapMention(text, alias)) continue;
-    if (alias === "lab" || alias === "the lab") {
+    if (alias === 'lab' || alias === 'the lab') {
       const pattern = new RegExp(
         `\\b${escapeRegExp(alias)}\\b(?!\\s+scientist)`,
-        "i"
+        'i'
       );
       if (pattern.test(text)) results.add(canonical);
       continue;
     }
-    const pattern = new RegExp(`\\b${escapeRegExp(alias)}\\b`, "i");
+    const pattern = new RegExp(`\\b${escapeRegExp(alias)}\\b`, 'i');
     if (pattern.test(text)) results.add(canonical);
   }
   return Array.from(results);
@@ -1554,43 +1553,43 @@ function stripMapAliases(value: string, aliasMap: Map<string, string>): string {
     if (!normalizedAlias) continue;
     const prepositionPattern = new RegExp(
       `\\b(?:on|in|at|from|near)\\s+${escapeRegExp(normalizedAlias)}\\b`,
-      "gi"
+      'gi'
     );
-    result = result.replace(prepositionPattern, " ");
-    const pattern = new RegExp(`\\b${escapeRegExp(normalizedAlias)}\\b`, "gi");
-    result = result.replace(pattern, " ");
+    result = result.replace(prepositionPattern, ' ');
+    const pattern = new RegExp(`\\b${escapeRegExp(normalizedAlias)}\\b`, 'gi');
+    result = result.replace(pattern, ' ');
   }
   return normalizeWhitespace(result);
 }
 
 function extractItemTokens(value: string): string[] {
   const cleaned = normalizeItemName(value)
-    .replace(/\b\d+(?:\.\d+)?(?:x\d+(?:\.\d+)?)?\b/g, " ")
-    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b\d+(?:\.\d+)?(?:x\d+(?:\.\d+)?)?\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
   const stopWords = new Set([
-    "machine",
-    "gun",
-    "rifle",
-    "pistol",
-    "launcher",
-    "grenade",
-    "automatic",
-    "assault",
-    "sniper",
-    "marksman",
-    "bolt",
-    "action",
-    "submachine",
-    "smg",
-    "lmg",
-    "dmr",
-    "carbine",
-    "weapon",
-    "weapons",
-    "heavy",
-    "light",
+    'machine',
+    'gun',
+    'rifle',
+    'pistol',
+    'launcher',
+    'grenade',
+    'automatic',
+    'assault',
+    'sniper',
+    'marksman',
+    'bolt',
+    'action',
+    'submachine',
+    'smg',
+    'lmg',
+    'dmr',
+    'carbine',
+    'weapon',
+    'weapons',
+    'heavy',
+    'light',
   ]);
 
   const tokens = cleaned.split(/\s+/).filter(Boolean);
@@ -1601,55 +1600,55 @@ function extractItemTokens(value: string): string[] {
 }
 
 const COVERAGE_STOP_WORDS = new Set([
-  "key",
-  "keys",
-  "keycard",
-  "keycards",
-  "card",
-  "cards",
-  "room",
-  "rooms",
-  "dorm",
-  "dorms",
-  "office",
-  "offices",
-  "door",
-  "doors",
-  "bunker",
-  "bunkers",
-  "warehouse",
-  "warehouses",
-  "shop",
-  "shops",
-  "store",
-  "stores",
-  "station",
-  "stations",
-  "base",
-  "bases",
-  "floor",
-  "floors",
-  "building",
-  "buildings",
-  "hangar",
-  "hangars",
-  "checkpoint",
-  "checkpoints",
-  "gate",
-  "gates",
-  "corridor",
-  "hall",
-  "hallway",
-  "hallways",
-  "exit",
-  "entrance",
-  "entrances",
-  "route",
-  "road",
-  "bridge",
-  "tunnel",
-  "yard",
-  "roof",
+  'key',
+  'keys',
+  'keycard',
+  'keycards',
+  'card',
+  'cards',
+  'room',
+  'rooms',
+  'dorm',
+  'dorms',
+  'office',
+  'offices',
+  'door',
+  'doors',
+  'bunker',
+  'bunkers',
+  'warehouse',
+  'warehouses',
+  'shop',
+  'shops',
+  'store',
+  'stores',
+  'station',
+  'stations',
+  'base',
+  'bases',
+  'floor',
+  'floors',
+  'building',
+  'buildings',
+  'hangar',
+  'hangars',
+  'checkpoint',
+  'checkpoints',
+  'gate',
+  'gates',
+  'corridor',
+  'hall',
+  'hallway',
+  'hallways',
+  'exit',
+  'entrance',
+  'entrances',
+  'route',
+  'road',
+  'bridge',
+  'tunnel',
+  'yard',
+  'roof',
 ]);
 
 function extractCoverageTokens(value: string): string[] {
@@ -1826,75 +1825,75 @@ function extractCount(text: string, links: string[] = []): number | undefined {
   for (const link of links) {
     const linkText = link.trim().toLowerCase();
     if (linkText.length === 0) continue;
-    const escaped = linkText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    scrubbed = scrubbed.replace(new RegExp(escaped, "g"), "");
+    const escaped = linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    scrubbed = scrubbed.replace(new RegExp(escaped, 'g'), '');
   }
 
   // Remove distance patterns like "75 meters".
-  scrubbed = scrubbed.replace(/\b\d+\s*meters?\b/gi, "");
+  scrubbed = scrubbed.replace(/\b\d+\s*meters?\b/gi, '');
   // Remove percentage ranges and single percentages like "0-50%" or "75%".
-  scrubbed = scrubbed.replace(/\b\d+\s*[-–]\s*\d+\s*%/g, "");
-  scrubbed = scrubbed.replace(/\b\d+\s*%/g, "");
+  scrubbed = scrubbed.replace(/\b\d+\s*[-–]\s*\d+\s*%/g, '');
+  scrubbed = scrubbed.replace(/\b\d+\s*%/g, '');
   // Remove numeric ranges like "3-4".
-  scrubbed = scrubbed.replace(/\b\d+\s*[-–]\s*\d+\b/g, "");
+  scrubbed = scrubbed.replace(/\b\d+\s*[-–]\s*\d+\b/g, '');
   // Remove calibers/dimensions like "7.62x51" or "12x70".
   scrubbed = scrubbed.replace(
     /\b\d+(?:\.\d+)?\s*(?:x|×)\s*\d+(?:\.\d+)?\b/g,
-    ""
+    ''
   );
   // Remove decimals like "7.62".
-  scrubbed = scrubbed.replace(/\b\d+\.\d+\b/g, "");
+  scrubbed = scrubbed.replace(/\b\d+\.\d+\b/g, '');
   // Remove numbers like "#2".
-  scrubbed = scrubbed.replace(/#\d+\b/g, "");
+  scrubbed = scrubbed.replace(/#\d+\b/g, '');
   // Remove 4-digit numbers starting with 0 (item IDs like "0052").
-  scrubbed = scrubbed.replace(/\b0\d{3,}\b/g, "");
+  scrubbed = scrubbed.replace(/\b0\d{3,}\b/g, '');
   // Remove alphanumeric model tokens (e.g., "SV-98", "AK-74", "6B43", "DVL-10").
   scrubbed = scrubbed
-    .replace(/\b[a-z]+-?\d+[a-z0-9-]*\b/g, "")
-    .replace(/\b\d+-[a-z0-9-]+\b/g, "")
-    .replace(/\b[a-z0-9-]+-\d+\b/g, "")
-    .replace(/\b\d+[a-z][a-z0-9-]*\b/g, "")
-    .replace(/\b[a-z]+\d+[a-z0-9-]*\b/g, "");
+    .replace(/\b[a-z]+-?\d+[a-z0-9-]*\b/g, '')
+    .replace(/\b\d+-[a-z0-9-]+\b/g, '')
+    .replace(/\b[a-z0-9-]+-\d+\b/g, '')
+    .replace(/\b\d+[a-z][a-z0-9-]*\b/g, '')
+    .replace(/\b[a-z]+\d+[a-z0-9-]*\b/g, '');
   // Remove location numbers like "room 203" or "gate 3".
   scrubbed = scrubbed.replace(
     /\b(?:room|dorm|gate|floor|level|block|sector|wing|building|office|warehouse|shop|store|hangar|checkpoint|bunker)\s+\d+\b/g,
-    ""
+    ''
   );
 
-  const numberPattern = "\\d{1,3}(?:,\\d{3})*";
+  const numberPattern = '\\d{1,3}(?:,\\d{3})*';
   const countWords =
-    "(?:times?|kills?|targets?|pmcs?|scavs?|operatives?|headshots?|shots?|matches?|raiders?|rogues?|snipers?|dogtags?|tags?)";
+    '(?:times?|kills?|targets?|pmcs?|scavs?|operatives?|headshots?|shots?|matches?|raiders?|rogues?|snipers?|dogtags?|tags?)';
   const verbs =
-    "(?:kill|eliminate|neutralize|find|locate|obtain|get|hand over|handover|turn in|submit|deliver|give|bring|collect|stash|install|mark|plant|place|reach|visit|use|transfer|complete|survive|extract|escape|hit|shoot)";
+    '(?:kill|eliminate|neutralize|find|locate|obtain|get|hand over|handover|turn in|submit|deliver|give|bring|collect|stash|install|mark|plant|place|reach|visit|use|transfer|complete|survive|extract|escape|hit|shoot)';
 
   let match = scrubbed.match(
-    new RegExp(`\\b(${numberPattern})\\b\\s*${countWords}\\b`, "i")
+    new RegExp(`\\b(${numberPattern})\\b\\s*${countWords}\\b`, 'i')
   );
-  if (match?.[1]) return Number(match[1].replace(/,/g, ""));
+  if (match?.[1]) return Number(match[1].replace(/,/g, ''));
 
   match = scrubbed.match(
-    new RegExp(`\\b${countWords}\\b\\s*(${numberPattern})\\b`, "i")
+    new RegExp(`\\b${countWords}\\b\\s*(${numberPattern})\\b`, 'i')
   );
-  if (match?.[1]) return Number(match[1].replace(/,/g, ""));
+  if (match?.[1]) return Number(match[1].replace(/,/g, ''));
 
-  match = scrubbed.match(new RegExp(`\\b(${numberPattern})\\b\\s*x\\b`, "i"));
-  if (match?.[1]) return Number(match[1].replace(/,/g, ""));
+  match = scrubbed.match(new RegExp(`\\b(${numberPattern})\\b\\s*x\\b`, 'i'));
+  if (match?.[1]) return Number(match[1].replace(/,/g, ''));
 
-  match = scrubbed.match(new RegExp(`\\bx\\s*(${numberPattern})\\b`, "i"));
-  if (match?.[1]) return Number(match[1].replace(/,/g, ""));
+  match = scrubbed.match(new RegExp(`\\bx\\s*(${numberPattern})\\b`, 'i'));
+  if (match?.[1]) return Number(match[1].replace(/,/g, ''));
 
   match = scrubbed.match(
-    new RegExp(`\\b${verbs}\\b[^\\d]{0,24}\\b(${numberPattern})\\b`, "i")
+    new RegExp(`\\b${verbs}\\b[^\\d]{0,24}\\b(${numberPattern})\\b`, 'i')
   );
-  if (match?.[1]) return Number(match[1].replace(/,/g, ""));
+  if (match?.[1]) return Number(match[1].replace(/,/g, ''));
 
   match = scrubbed.match(
     new RegExp(
       `\\b(${numberPattern})\\b\\s*(?:items?|pcs?|pieces?|packs?|bottles?|units?)\\b`,
-      "i"
+      'i'
     )
   );
-  if (match?.[1]) return Number(match[1].replace(/,/g, ""));
+  if (match?.[1]) return Number(match[1].replace(/,/g, ''));
 
   return undefined;
 }
@@ -1984,7 +1983,7 @@ function parseRewards(lines: string[]): WikiRewards {
 
     const xpMatch = clean.match(/\+?([\d,]+)\s*EXP/i);
     if (xpMatch && xpMatch[1]) {
-      xp = Number(xpMatch[1].replace(/,/g, ""));
+      xp = Number(xpMatch[1].replace(/,/g, ''));
       continue;
     }
 
@@ -2003,13 +2002,13 @@ function parseRewards(lines: string[]): WikiRewards {
     if (money === undefined) {
       const moneyMatch = clean.match(/([\d,]+)\s*Roubles/i);
       if (moneyMatch && moneyMatch[1]) {
-        money = Number(moneyMatch[1].replace(/,/g, ""));
+        money = Number(moneyMatch[1].replace(/,/g, ''));
         continue;
       }
     }
 
     const itemMatch = clean.match(
-      new RegExp(`^(\\d+)\\s*(?:x|\\u00d7)\\s*(.+)$`, "i")
+      new RegExp(`^(\\d+)\\s*(?:x|\\u00d7)\\s*(.+)$`, 'i')
     );
     if (itemMatch && itemMatch[1] && itemMatch[2]) {
       items.push({ count: Number(itemMatch[1]), name: itemMatch[2].trim() });
@@ -2026,7 +2025,7 @@ function parseRewards(lines: string[]): WikiRewards {
 }
 
 function parseRelatedQuestItems(wikitext: string): WikiRelatedItem[] {
-  const lines = wikitext.split("\n");
+  const lines = wikitext.split('\n');
   const items: WikiRelatedItem[] = [];
   let inTable = false;
   let currentRow: string[] = [];
@@ -2037,8 +2036,8 @@ function parseRelatedQuestItems(wikitext: string): WikiRelatedItem[] {
       return;
     }
 
-    const itemCell = currentRow[1] ?? "";
-    const requirementCell = currentRow[3] ?? "";
+    const itemCell = currentRow[1] ?? '';
+    const requirementCell = currentRow[3] ?? '';
     const name =
       extractWikiLinks(itemCell)[0] ?? stripWikiMarkup(itemCell).trim();
     if (name.length === 0) {
@@ -2062,18 +2061,18 @@ function parseRelatedQuestItems(wikitext: string): WikiRelatedItem[] {
     if (!inTable) continue;
 
     const trimmed = line.trim();
-    if (trimmed.startsWith("|}")) {
+    if (trimmed.startsWith('|}')) {
       flushRow();
       break;
     }
 
-    if (trimmed.startsWith("|-")) {
+    if (trimmed.startsWith('|-')) {
       flushRow();
       continue;
     }
 
     if (/^[|!]/.test(trimmed)) {
-      const raw = trimmed.replace(/^[|!]/, "");
+      const raw = trimmed.replace(/^[|!]/, '');
       const cells = raw.split(/\s*(?:\|\||!!)\s*/);
       for (const cell of cells) {
         currentRow.push(cell.trim());
@@ -2088,7 +2087,7 @@ function parseInfoboxLinks(wikitext: string, field: string): string[] {
   // Use [ \t]* instead of \s* to avoid matching newlines
   const regex = new RegExp(
     `^\\|\\s*${escapeRegExp(field)}\\s*=[ \\t]*(.+)$`,
-    "mi"
+    'mi'
   );
   const match = wikitext.match(regex);
   if (!match || !match[1]) return [];
@@ -2114,7 +2113,7 @@ function parseInfoboxValue(
   // Use [ \t]* instead of \s* to avoid matching newlines
   const regex = new RegExp(
     `^\\|\\s*${escapeRegExp(field)}\\s*=[ \\t]*(.+)$`,
-    "mi"
+    'mi'
   );
   const match = wikitext.match(regex);
   if (!match || !match[1]) return undefined;
@@ -2125,19 +2124,19 @@ function parseWikiTask(
   pageTitle: string,
   wikitext: string,
   mapAliasMap: Map<string, string>,
-  lastRevision?: WikiTaskData["lastRevision"]
+  lastRevision?: WikiTaskData['lastRevision']
 ): WikiTaskData {
-  const requirements = extractSectionLines(wikitext, "Requirements");
-  const objectivesLines = extractSectionLines(wikitext, "Objectives");
-  const rewardsLines = extractSectionLines(wikitext, "Rewards");
-  const mapFields = ["location", "map", "maps", "locations"];
+  const requirements = extractSectionLines(wikitext, 'Requirements');
+  const objectivesLines = extractSectionLines(wikitext, 'Objectives');
+  const rewardsLines = extractSectionLines(wikitext, 'Rewards');
+  const mapFields = ['location', 'map', 'maps', 'locations'];
   const mapsFromInfobox = new Set<string>();
 
   for (const field of mapFields) {
     const links = parseInfoboxLinks(wikitext, field);
     for (const link of links) {
       const canonical = mapAliasMap.get(normalizeMapName(link));
-      const rawValue = parseInfoboxValue(wikitext, field) ?? "";
+      const rawValue = parseInfoboxValue(wikitext, field) ?? '';
       if (canonical && !isExcludedMapMention(rawValue, link)) {
         mapsFromInfobox.add(canonical);
       }
@@ -2155,21 +2154,21 @@ function parseWikiTask(
   const relatedItems = parseRelatedQuestItems(wikitext);
   const relatedRequiredItems = uniqueList(
     relatedItems
-      .filter((item) => /required/i.test(item.requirement ?? ""))
+      .filter((item) => /required/i.test(item.requirement ?? ''))
       .map((item) => item.name)
   );
   const relatedHandoverItems = uniqueList(
     relatedItems
-      .filter((item) => /handover/i.test(item.requirement ?? ""))
+      .filter((item) => /handover/i.test(item.requirement ?? ''))
       .map((item) => item.name)
   );
 
   const nextTasks = uniqueList([
-    ...parseInfoboxLinks(wikitext, "next"),
-    ...parseInfoboxLinks(wikitext, "next_task"),
-    ...parseInfoboxLinks(wikitext, "next task"),
-    ...parseInfoboxLinks(wikitext, "next_quest"),
-    ...parseInfoboxLinks(wikitext, "next quest"),
+    ...parseInfoboxLinks(wikitext, 'next'),
+    ...parseInfoboxLinks(wikitext, 'next_task'),
+    ...parseInfoboxLinks(wikitext, 'next task'),
+    ...parseInfoboxLinks(wikitext, 'next_quest'),
+    ...parseInfoboxLinks(wikitext, 'next quest'),
   ]);
 
   return {
@@ -2178,7 +2177,7 @@ function parseWikiTask(
     objectives: parseObjectives(objectivesLines, mapAliasMap),
     rewards: parseRewards(rewardsLines),
     minPlayerLevel: parseMinLevel(requirements),
-    previousTasks: parseInfoboxLinks(wikitext, "previous"),
+    previousTasks: parseInfoboxLinks(wikitext, 'previous'),
     nextTasks,
     maps: Array.from(mapsFromInfobox),
     relatedItems,
@@ -2189,8 +2188,8 @@ function parseWikiTask(
 }
 
 function printWikiData(wiki: WikiTaskData): void {
-  printHeader("WIKI EXTRACTION");
-  console.log(`${bold("Page")}: ${wiki.pageTitle}`);
+  printHeader('WIKI EXTRACTION');
+  console.log(`${bold('Page')}: ${wiki.pageTitle}`);
 
   // Show last revision info
   if (wiki.lastRevision) {
@@ -2198,20 +2197,20 @@ function printWikiData(wiki: WikiTaskData): void {
     const daysAgo = Math.floor(
       (Date.now() - revDate.getTime()) / (1000 * 60 * 60 * 24)
     );
-    const dateStr = revDate.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
+    const dateStr = revDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
     const isPost1_0 = revDate >= TARKOV_1_0_LAUNCH;
-    const freshness = isPost1_0 ? "🟢 Post-1.0" : "🔴 Pre-1.0";
+    const freshness = isPost1_0 ? '🟢 Post-1.0' : '🔴 Pre-1.0';
     console.log(
-      `${bold("Last Edit")}: ${dateStr} (${daysAgo} days ago) ${freshness}`
+      `${bold('Last Edit')}: ${dateStr} (${daysAgo} days ago) ${freshness}`
     );
     console.log(`  ${dim(`by ${wiki.lastRevision.user}`)}`);
   }
 
-  console.log(`${bold("Requirements")}: ${wiki.requirements.length}`);
+  console.log(`${bold('Requirements')}: ${wiki.requirements.length}`);
   for (const line of wiki.requirements) {
     console.log(`  - ${stripWikiMarkup(line)}`);
   }
@@ -2221,18 +2220,18 @@ function printWikiData(wiki: WikiTaskData): void {
     );
   }
   if (wiki.maps.length > 0) {
-    console.log(`  ${dim(`Detected map(s): ${wiki.maps.join(", ")}`)}`);
+    console.log(`  ${dim(`Detected map(s): ${wiki.maps.join(', ')}`)}`);
   }
 
   console.log();
-  console.log(`${bold("Objectives")}: ${wiki.objectives.length}`);
+  console.log(`${bold('Objectives')}: ${wiki.objectives.length}`);
   for (const obj of wiki.objectives) {
-    const count = obj.count !== undefined ? ` (count: ${obj.count})` : "";
+    const count = obj.count !== undefined ? ` (count: ${obj.count})` : '';
     console.log(`  - ${obj.text}${count}`);
   }
 
   console.log();
-  console.log(`${bold("Rewards")}: ${wiki.rewards.raw.length}`);
+  console.log(`${bold('Rewards')}: ${wiki.rewards.raw.length}`);
   for (const reward of wiki.rewards.raw) {
     console.log(`  - ${reward}`);
   }
@@ -2244,10 +2243,10 @@ function printWikiData(wiki: WikiTaskData): void {
 
   console.log();
   if (wiki.previousTasks.length > 0) {
-    console.log(`${bold("Previous Tasks")}: ${wiki.previousTasks.join(", ")}`);
+    console.log(`${bold('Previous Tasks')}: ${wiki.previousTasks.join(', ')}`);
   }
   if (wiki.nextTasks.length > 0) {
-    console.log(`${bold("Next Tasks")}: ${wiki.nextTasks.join(", ")}`);
+    console.log(`${bold('Next Tasks')}: ${wiki.nextTasks.join(', ')}`);
   }
   console.log();
 }
@@ -2269,14 +2268,14 @@ function compareTasks(
   let wikiEditedPost1_0: boolean | undefined;
   if (wiki.lastRevision?.timestamp) {
     const revDate = new Date(wiki.lastRevision.timestamp);
-    wikiLastEdit = revDate.toISOString().split("T")[0];
+    wikiLastEdit = revDate.toISOString().split('T')[0];
     wikiEditDaysAgo = Math.floor(
       (Date.now() - revDate.getTime()) / (1000 * 60 * 60 * 24)
     );
     wikiEditedPost1_0 = revDate >= TARKOV_1_0_LAUNCH;
   }
 
-  if (verbose) printHeader("COMPARISON");
+  if (verbose) printHeader('COMPARISON');
 
   // minPlayerLevel
   if (wiki.minPlayerLevel !== undefined) {
@@ -2284,10 +2283,10 @@ function compareTasks(
       discrepancies.push({
         taskId,
         taskName,
-        field: "minPlayerLevel",
+        field: 'minPlayerLevel',
         apiValue: apiTask.minPlayerLevel,
         wikiValue: wiki.minPlayerLevel,
-        priority: getPriority("minPlayerLevel"),
+        priority: getPriority('minPlayerLevel'),
         trustsWiki: true,
         wikiLastEdit,
         wikiEditDaysAgo,
@@ -2305,7 +2304,7 @@ function compareTasks(
   }
 
   const isPveTask =
-    apiTask.gameModes?.length === 1 && apiTask.gameModes[0] === "pve";
+    apiTask.gameModes?.length === 1 && apiTask.gameModes[0] === 'pve';
 
   // Task-level map/location
   const apiMapName = apiTask.map?.name;
@@ -2325,10 +2324,10 @@ function compareTasks(
       discrepancies.push({
         taskId,
         taskName,
-        field: "map",
-        apiValue: apiMapName ?? "none",
-        wikiValue: wikiTaskMaps.join(", ") || "none",
-        priority: getPriority("map"),
+        field: 'map',
+        apiValue: apiMapName ?? 'none',
+        wikiValue: wikiTaskMaps.join(', ') || 'none',
+        priority: getPriority('map'),
         trustsWiki: true,
         wikiLastEdit,
         wikiEditDaysAgo,
@@ -2336,8 +2335,8 @@ function compareTasks(
       });
       if (verbose)
         console.log(
-          `${icons.warning} map: API=${apiMapName ?? "none"}, Wiki=${
-            wikiTaskMaps.join(", ") || "none"
+          `${icons.warning} map: API=${apiMapName ?? 'none'}, Wiki=${
+            wikiTaskMaps.join(', ') || 'none'
           }`
         );
     } else if (verbose) {
@@ -2364,7 +2363,7 @@ function compareTasks(
   const matchedObjectives: Array<{
     api: ApiObjective;
     wiki: WikiObjective;
-    matchType: "text" | "item";
+    matchType: 'text' | 'item';
   }> = [];
   const unmatchedApi: ApiObjective[] = [];
   const unmatchedWikiIndexes = new Set(wikiCandidates.map((c) => c.index));
@@ -2377,14 +2376,14 @@ function compareTasks(
 
   for (const apiObj of apiTask.objectives ?? []) {
     const apiTextKey = stripMapAliases(
-      normalizeObjectiveMatchKey(apiObj.description ?? ""),
+      normalizeObjectiveMatchKey(apiObj.description ?? ''),
       mapAliasMap
     );
-    const apiVerb = getObjectiveVerbKey(apiObj.description ?? "");
+    const apiVerb = getObjectiveVerbKey(apiObj.description ?? '');
     const apiItemRefs = collectObjectiveItems(apiObj);
     const apiFoundInRaid =
       apiObj.foundInRaid === true ||
-      /found in raid/i.test(apiObj.description ?? "");
+      /found in raid/i.test(apiObj.description ?? '');
 
     let matched = false;
 
@@ -2396,7 +2395,7 @@ function compareTasks(
         matchedObjectives.push({
           api: apiObj,
           wiki: candidate.wiki,
-          matchType: "text",
+          matchType: 'text',
         });
         unmatchedWikiIndexes.delete(candidate.index);
         matched = true;
@@ -2404,12 +2403,12 @@ function compareTasks(
     }
 
     if (!matched && apiTextKey.length > 0) {
-      const apiTokens = apiTextKey.split(" ").filter(Boolean);
+      const apiTokens = apiTextKey.split(' ').filter(Boolean);
       if (apiTokens.length >= 4) {
         const substringMatches = wikiCandidates.filter((c) => {
           if (!unmatchedWikiIndexes.has(c.index)) return false;
           if (!c.textKey || c.textKey.length === 0) return false;
-          const wikiTokens = c.textKey.split(" ").filter(Boolean);
+          const wikiTokens = c.textKey.split(' ').filter(Boolean);
           if (wikiTokens.length < 4) return false;
           return (
             c.textKey.includes(apiTextKey) || apiTextKey.includes(c.textKey)
@@ -2421,7 +2420,7 @@ function compareTasks(
           matchedObjectives.push({
             api: apiObj,
             wiki: candidate.wiki,
-            matchType: "text",
+            matchType: 'text',
           });
           unmatchedWikiIndexes.delete(candidate.index);
           matched = true;
@@ -2436,11 +2435,11 @@ function compareTasks(
           c.verb === apiVerb &&
           hasItemIntersection(apiItemRefs, c.items, taskName)
       );
-      if (!candidate && apiVerb === "hand_over" && apiFoundInRaid) {
+      if (!candidate && apiVerb === 'hand_over' && apiFoundInRaid) {
         candidate = wikiCandidates.find(
           (c) =>
             unmatchedWikiIndexes.has(c.index) &&
-            c.verb === "find" &&
+            c.verb === 'find' &&
             hasItemIntersection(apiItemRefs, c.items, taskName)
         );
       }
@@ -2448,7 +2447,7 @@ function compareTasks(
         matchedObjectives.push({
           api: apiObj,
           wiki: candidate.wiki,
-          matchType: "item",
+          matchType: 'item',
         });
         unmatchedWikiIndexes.delete(candidate.index);
         matched = true;
@@ -2463,7 +2462,7 @@ function compareTasks(
   const apiFoundInRaidItemSets = (apiTask.objectives ?? [])
     .filter(
       (obj) =>
-        obj.foundInRaid === true || /found in raid/i.test(obj.description ?? "")
+        obj.foundInRaid === true || /found in raid/i.test(obj.description ?? '')
     )
     .map((obj) => buildAliasSet(collectObjectiveItems(obj)));
 
@@ -2471,7 +2470,7 @@ function compareTasks(
   for (const candidate of wikiCandidates) {
     if (!unmatchedWikiIndexes.has(candidate.index)) continue;
 
-    if (candidate.verb === "find" && candidate.items.length > 0) {
+    if (candidate.verb === 'find' && candidate.items.length > 0) {
       const redundantFind = apiFoundInRaidItemSets.some((aliasSet) =>
         aliasSetIntersects(aliasSet, candidate.items)
       );
@@ -2490,7 +2489,7 @@ function compareTasks(
     matchedObjectives.push({
       api: (apiTask.objectives ?? [])[0],
       wiki: wiki.objectives[0],
-      matchType: "text",
+      matchType: 'text',
     });
     unmatchedApi.length = 0;
     unmatchedWiki.length = 0;
@@ -2501,10 +2500,10 @@ function compareTasks(
     discrepancies.push({
       taskId,
       taskName,
-      field: "objectives.description",
+      field: 'objectives.description',
       apiValue: desc,
-      wikiValue: "not found",
-      priority: getPriority("objectives.description"),
+      wikiValue: 'not found',
+      priority: getPriority('objectives.description'),
       trustsWiki: true,
       wikiLastEdit,
       wikiEditDaysAgo,
@@ -2518,10 +2517,10 @@ function compareTasks(
     discrepancies.push({
       taskId,
       taskName,
-      field: "objectives.description",
-      apiValue: "not found",
+      field: 'objectives.description',
+      apiValue: 'not found',
       wikiValue: wikiObj.text,
-      priority: getPriority("objectives.description"),
+      priority: getPriority('objectives.description'),
       trustsWiki: true,
       wikiLastEdit,
       wikiEditDaysAgo,
@@ -2532,10 +2531,10 @@ function compareTasks(
   }
 
   for (const { api: apiObj, wiki: wikiObj, matchType } of matchedObjectives) {
-    const apiDesc = normalizeWhitespace(apiObj.description ?? "");
+    const apiDesc = normalizeWhitespace(apiObj.description ?? '');
     const wikiDesc = normalizeWhitespace(wikiObj.text);
     const objectiveLabel = apiObj.description ?? wikiObj.text ?? apiObj.id;
-    const apiVerb = getObjectiveVerbKey(apiObj.description ?? "");
+    const apiVerb = getObjectiveVerbKey(apiObj.description ?? '');
     const apiItemRefs = collectObjectiveItems(apiObj);
     const apiItems = uniqueList(apiItemRefs.map((item) => item.name));
     const wikiItems = uniqueList(wikiObj.items ?? []);
@@ -2557,7 +2556,7 @@ function compareTasks(
     const wikiItemsForCompare = uniqueList([
       ...wikiItems,
       ...matchingRequiredItems,
-      ...(wikiItems.length === 0 && (apiHasQuestItem || apiVerb === "hand_over")
+      ...(wikiItems.length === 0 && (apiHasQuestItem || apiVerb === 'hand_over')
         ? wiki.relatedHandoverItems
         : []),
     ]);
@@ -2568,7 +2567,7 @@ function compareTasks(
 
     const apiCount =
       apiObj.count ??
-      extractCount(apiObj.description ?? "", collectObjectiveItemNames(apiObj));
+      extractCount(apiObj.description ?? '', collectObjectiveItemNames(apiObj));
     const wikiCount =
       isPveTask && wikiObj.pveCount !== undefined
         ? wikiObj.pveCount
@@ -2603,7 +2602,7 @@ function compareTasks(
     );
 
     if (
-      matchType === "text" &&
+      matchType === 'text' &&
       apiDesc &&
       wikiDesc &&
       normalizedApi !== normalizedWiki &&
@@ -2613,10 +2612,10 @@ function compareTasks(
       discrepancies.push({
         taskId,
         taskName,
-        field: "objectives.description",
+        field: 'objectives.description',
         apiValue: apiDescForCompare,
         wikiValue: wikiDescForCompare,
-        priority: getPriority("objectives.description"),
+        priority: getPriority('objectives.description'),
         trustsWiki: true,
         wikiLastEdit,
         wikiEditDaysAgo,
@@ -2637,10 +2636,10 @@ function compareTasks(
         discrepancies.push({
           taskId,
           taskName,
-          field: "objectives.count",
+          field: 'objectives.count',
           apiValue: `${apiCount} (${objectiveLabel})`,
           wikiValue: `${wikiCount} (${wikiObj.text})`,
-          priority: getPriority("objectives.count"),
+          priority: getPriority('objectives.count'),
           trustsWiki: true,
           wikiLastEdit,
           wikiEditDaysAgo,
@@ -2657,14 +2656,14 @@ function compareTasks(
 
     let apiMapNames = uniqueList((apiObj.maps ?? []).map((m) => m.name));
     if (apiMapNames.length === 0) {
-      apiMapNames = extractMapsFromText(apiObj.description ?? "", mapAliasMap);
+      apiMapNames = extractMapsFromText(apiObj.description ?? '', mapAliasMap);
     }
     const wikiMapNames = uniqueList(wikiObj.maps ?? []);
     if (wikiMapNames.length > 0) {
       const apiSet = toNormalizedSet(apiMapNames, normalizeMapName);
       const wikiSet = toNormalizedSet(wikiMapNames, normalizeMapName);
-      const descForTransit = `${apiObj.description ?? ""} ${
-        wikiObj.text ?? ""
+      const descForTransit = `${apiObj.description ?? ''} ${
+        wikiObj.text ?? ''
       }`;
       const isTransitObjective =
         /\btransit\b|\btransfer\b|\bpassage\b|\bleading to\b/i.test(
@@ -2672,7 +2671,7 @@ function compareTasks(
         );
       const allowTransitSuperset =
         isTransitObjective && apiSet.size > 0 && isSubset(apiSet, wikiSet);
-      const skipMapCompare = apiVerb === "hand_over" && apiSet.size === 0;
+      const skipMapCompare = apiVerb === 'hand_over' && apiSet.size === 0;
 
       if (
         !setsEqual(apiSet, wikiSet) &&
@@ -2682,10 +2681,10 @@ function compareTasks(
         discrepancies.push({
           taskId,
           taskName,
-          field: "objectives.maps",
-          apiValue: `${apiMapNames.join(", ") || "none"} (${objectiveLabel})`,
-          wikiValue: `${wikiMapNames.join(", ") || "none"} (${wikiObj.text})`,
-          priority: getPriority("objectives.maps"),
+          field: 'objectives.maps',
+          apiValue: `${apiMapNames.join(', ') || 'none'} (${objectiveLabel})`,
+          wikiValue: `${wikiMapNames.join(', ') || 'none'} (${wikiObj.text})`,
+          priority: getPriority('objectives.maps'),
           trustsWiki: true,
           wikiLastEdit,
           wikiEditDaysAgo,
@@ -2694,23 +2693,23 @@ function compareTasks(
         if (verbose)
           console.log(
             `${icons.warning} objective maps differ: API=${
-              apiMapNames.join(", ") || "none"
-            }, Wiki=${wikiMapNames.join(", ") || "none"}`
+              apiMapNames.join(', ') || 'none'
+            }, Wiki=${wikiMapNames.join(', ') || 'none'}`
           );
       }
     } else if (verbose && apiMapNames.length > 0) {
       console.log(
         `${icons.info} objective maps: API=${apiMapNames.join(
-          ", "
+          ', '
         )}, Wiki=none (not specified)`
       );
     }
 
     if (apiItemRefs.length > 0 || wikiItemsForCompare.length > 0) {
-      const apiDescText = apiObj.description ?? "";
+      const apiDescText = apiObj.description ?? '';
       const isSkillObjective =
         /\bskill level\b/i.test(apiDescText) ||
-        /\bskill level\b/i.test(wikiObj.text ?? "");
+        /\bskill level\b/i.test(wikiObj.text ?? '');
       if (isSkillObjective) {
         if (verbose)
           console.log(
@@ -2721,16 +2720,16 @@ function compareTasks(
       const usesRelatedItems =
         matchingRequiredItems.length > 0 ||
         (wikiItems.length === 0 &&
-          (apiHasQuestItem || apiVerb === "hand_over") &&
+          (apiHasQuestItem || apiVerb === 'hand_over') &&
           wiki.relatedHandoverItems.length > 0);
       const mentionsItemsInText =
         wikiItems.length > 0 &&
         wikiItems.every(
           (item) =>
             objectiveMentionsItem(item, apiDescText, mapAliasMap) ||
-            objectiveMentionsItem(item, wikiObj.text ?? "", mapAliasMap)
+            objectiveMentionsItem(item, wikiObj.text ?? '', mapAliasMap)
         );
-      const objectiveText = `${apiDescText} ${wikiObj.text ?? ""}`;
+      const objectiveText = `${apiDescText} ${wikiObj.text ?? ''}`;
       const textCoversApiItems =
         apiItemRefs.length > 0 &&
         wikiItemsForCompare.length === 0 &&
@@ -2738,7 +2737,7 @@ function compareTasks(
       if (
         apiItemRefs.length === 0 &&
         !usesRelatedItems &&
-        apiVerb !== "hand_over" &&
+        apiVerb !== 'hand_over' &&
         mentionsItemsInText
       ) {
         if (verbose)
@@ -2753,10 +2752,10 @@ function compareTasks(
         wikiItemsForCompare.length === 0;
       const categoryRequirement =
         objectiveHasCategoryItemRequirement(apiDescText) ||
-        objectiveHasCategoryItemRequirement(wikiObj.text ?? "");
+        objectiveHasCategoryItemRequirement(wikiObj.text ?? '');
       const handoverMatchesQuestItem =
         apiItemRefs.length === 0 &&
-        apiVerb === "hand_over" &&
+        apiVerb === 'hand_over' &&
         wikiItemsForCompare.length > 0 &&
         Array.from(
           toNormalizedSet(wikiItemsForCompare, normalizeItemName)
@@ -2786,12 +2785,12 @@ function compareTasks(
         discrepancies.push({
           taskId,
           taskName,
-          field: "objectives.items",
-          apiValue: `${apiItems.join(", ") || "none"} (${objectiveLabel})`,
-          wikiValue: `${wikiItemsForCompare.join(", ") || "none"} (${
+          field: 'objectives.items',
+          apiValue: `${apiItems.join(', ') || 'none'} (${objectiveLabel})`,
+          wikiValue: `${wikiItemsForCompare.join(', ') || 'none'} (${
             wikiObj.text
           })`,
-          priority: getPriority("objectives.items"),
+          priority: getPriority('objectives.items'),
           trustsWiki: true,
           wikiLastEdit,
           wikiEditDaysAgo,
@@ -2800,8 +2799,8 @@ function compareTasks(
         if (verbose)
           console.log(
             `${icons.warning} objective items differ: API=${
-              apiItems.join(", ") || "none"
-            }, Wiki=${wikiItems.join(", ") || "none"}`
+              apiItems.join(', ') || 'none'
+            }, Wiki=${wikiItems.join(', ') || 'none'}`
           );
       }
     }
@@ -2823,10 +2822,10 @@ function compareTasks(
         discrepancies.push({
           taskId,
           taskName,
-          field: "taskRequirements",
-          apiValue: apiReqNames.join(", ") || "none",
-          wikiValue: wiki.previousTasks.join(", ") || "none",
-          priority: getPriority("taskRequirements"),
+          field: 'taskRequirements',
+          apiValue: apiReqNames.join(', ') || 'none',
+          wikiValue: wiki.previousTasks.join(', ') || 'none',
+          priority: getPriority('taskRequirements'),
           trustsWiki: true,
           wikiLastEdit,
           wikiEditDaysAgo,
@@ -2842,12 +2841,12 @@ function compareTasks(
           if (missing.length > 0)
             console.log(
               `${icons.warning} prerequisites missing in API: ${missing.join(
-                ", "
+                ', '
               )}`
             );
           if (extra.length > 0)
             console.log(
-              `${icons.warning} prerequisites extra in API: ${extra.join(", ")}`
+              `${icons.warning} prerequisites extra in API: ${extra.join(', ')}`
             );
         }
       } else if (verbose) {
@@ -2867,10 +2866,10 @@ function compareTasks(
         discrepancies.push({
           taskId,
           taskName,
-          field: "nextTasks",
-          apiValue: apiNextNames.join(", ") || "none",
-          wikiValue: wiki.nextTasks.join(", ") || "none",
-          priority: getPriority("nextTasks"),
+          field: 'nextTasks',
+          apiValue: apiNextNames.join(', ') || 'none',
+          wikiValue: wiki.nextTasks.join(', ') || 'none',
+          priority: getPriority('nextTasks'),
           trustsWiki: true,
           wikiLastEdit,
           wikiEditDaysAgo,
@@ -2886,12 +2885,12 @@ function compareTasks(
           if (missing.length > 0)
             console.log(
               `${icons.warning} next tasks missing in API: ${missing.join(
-                ", "
+                ', '
               )}`
             );
           if (extra.length > 0)
             console.log(
-              `${icons.warning} next tasks extra in API: ${extra.join(", ")}`
+              `${icons.warning} next tasks extra in API: ${extra.join(', ')}`
             );
         }
       } else if (verbose) {
@@ -2906,10 +2905,10 @@ function compareTasks(
       discrepancies.push({
         taskId,
         taskName,
-        field: "experience",
+        field: 'experience',
         apiValue: apiTask.experience,
         wikiValue: wiki.rewards.xp,
-        priority: getPriority("experience"),
+        priority: getPriority('experience'),
         trustsWiki: true,
         wikiLastEdit,
         wikiEditDaysAgo,
@@ -2945,7 +2944,7 @@ function compareTasks(
             field: `reputation.${wikiRep.trader}`,
             apiValue: apiTraderRep.standing,
             wikiValue: wikiRep.value,
-            priority: getPriority("reputation"),
+            priority: getPriority('reputation'),
             trustsWiki: true,
             wikiLastEdit,
             wikiEditDaysAgo,
@@ -2972,16 +2971,16 @@ function compareTasks(
   // Money (Roubles)
   if (wiki.rewards.money !== undefined && apiTask.finishRewards?.items) {
     const apiMoney = apiTask.finishRewards.items.find(
-      (i) => i.item.name === "Roubles"
+      (i) => i.item.name === 'Roubles'
     )?.count;
     if (apiMoney !== undefined && apiMoney !== wiki.rewards.money) {
       discrepancies.push({
         taskId,
         taskName,
-        field: "money",
+        field: 'money',
         apiValue: apiMoney,
         wikiValue: wiki.rewards.money,
-        priority: getPriority("money"),
+        priority: getPriority('money'),
         trustsWiki: true,
         wikiLastEdit,
         wikiEditDaysAgo,
@@ -2999,7 +2998,7 @@ function compareTasks(
   if (verbose) {
     console.log();
     if (discrepancies.length === 0) {
-      printSuccess("No discrepancies detected.");
+      printSuccess('No discrepancies detected.');
     } else {
       printSuccess(`Detected ${discrepancies.length} discrepancy(ies).`);
     }
@@ -3018,7 +3017,7 @@ async function runSingleTask(
   const task = resolveTask(tasks, options);
   if (!task) {
     printError(
-      `Task not found (id=${options.id ?? "n/a"}, name=${
+      `Task not found (id=${options.id ?? 'n/a'}, name=${
         options.name ?? DEFAULT_TASK_NAME
       })`
     );
@@ -3116,8 +3115,8 @@ async function runBulkMode(
     }
   }
 
-  console.log("\n");
-  printHeader("BULK RESULTS");
+  console.log('\n');
+  printHeader('BULK RESULTS');
   console.log(`Tasks checked: ${checked}`);
   console.log(`Wiki cache hits: ${cacheHits}`);
   console.log(`Wiki errors: ${errors}`);
@@ -3152,15 +3151,15 @@ async function runBulkMode(
 
   if (post1_0Count > 0 || pre1_0Count > 0) {
     console.log();
-    printHeader("WIKI DATA FRESHNESS (1.0 = Nov 15, 2025)");
+    printHeader('WIKI DATA FRESHNESS (1.0 = Nov 15, 2025)');
     console.log(
-      `  🟢 Post-1.0 wiki edits: ${post1_0Count} ${dim("(high confidence)")}`
+      `  🟢 Post-1.0 wiki edits: ${post1_0Count} ${dim('(high confidence)')}`
     );
     console.log(
-      `  🔴 Pre-1.0 wiki edits: ${pre1_0Count} ${dim("(may be outdated)")}`
+      `  🔴 Pre-1.0 wiki edits: ${pre1_0Count} ${dim('(may be outdated)')}`
     );
     if (unknownCount > 0) {
-      console.log(`  ⚪ Unknown: ${unknownCount} ${dim("(no revision data)")}`);
+      console.log(`  ⚪ Unknown: ${unknownCount} ${dim('(no revision data)')}`);
     }
   }
 
@@ -3177,15 +3176,15 @@ async function runBulkMode(
 
   if (staleSuppresions.length > 0) {
     console.log();
-    printHeader("STALE WIKI-INCORRECT SUPPRESSIONS");
+    printHeader('STALE WIKI-INCORRECT SUPPRESSIONS');
     console.log(
-      `  ${bold("These suppressions can be removed")} - wiki now matches API:`
+      `  ${bold('These suppressions can be removed')} - wiki now matches API:`
     );
     console.log();
     for (const key of staleSuppresions) {
-      const [taskId, field] = key.split(":");
+      const [taskId, field] = key.split(':');
       const task = tasksWithWiki.find((t) => t.id === taskId);
-      const taskName = task?.name ?? "Unknown Task";
+      const taskName = task?.name ?? 'Unknown Task';
       console.log(`  🗑️  ${taskName} ${dim(`[${field}]`)}`);
       console.log(`     ${dim(`ID: ${taskId}`)}`);
     }
@@ -3197,54 +3196,54 @@ async function runBulkMode(
   console.log();
 
   if (newDiscrepancies.length > 0) {
-    const groupBy = options.groupBy ?? "category";
+    const groupBy = options.groupBy ?? 'category';
 
     // Priority order and labels
-    const priorityOrder: Priority[] = ["high", "medium", "low"];
+    const priorityOrder: Priority[] = ['high', 'medium', 'low'];
     const priorityLabels: Record<Priority, string> = {
-      high: "🔴 HIGH",
-      medium: "🟡 MEDIUM",
-      low: "🟢 LOW",
+      high: '🔴 HIGH',
+      medium: '🟡 MEDIUM',
+      low: '🟢 LOW',
     };
 
     const priorityIcons: Record<Priority, string> = {
-      high: "🔴",
-      medium: "🟡",
-      low: "🟢",
+      high: '🔴',
+      medium: '🟡',
+      low: '🟢',
     };
 
     const categoryLabels: Record<string, string> = {
-      minPlayerLevel: "Level Requirements",
-      taskRequirements: "Task Prerequisites",
-      nextTasks: "Task Next / Unlocks",
-      map: "Task Map / Location",
-      "objectives.description": "Objective Descriptions",
-      experience: "Reward: Experience (XP)",
-      money: "Reward: Money (Roubles)",
-      "objectives.count": "Objective Counts",
-      "objectives.maps": "Objective Maps / Locations",
-      "objectives.items": "Objective Required Items",
+      minPlayerLevel: 'Level Requirements',
+      taskRequirements: 'Task Prerequisites',
+      nextTasks: 'Task Next / Unlocks',
+      map: 'Task Map / Location',
+      'objectives.description': 'Objective Descriptions',
+      experience: 'Reward: Experience (XP)',
+      money: 'Reward: Money (Roubles)',
+      'objectives.count': 'Objective Counts',
+      'objectives.maps': 'Objective Maps / Locations',
+      'objectives.items': 'Objective Required Items',
     };
 
     // Define category display order (most important first)
     const categoryOrder = [
-      "minPlayerLevel",
-      "taskRequirements",
-      "nextTasks",
-      "map",
-      "objectives.description",
-      "objectives.count",
-      "objectives.maps",
-      "objectives.items",
-      "experience",
-      "money",
+      'minPlayerLevel',
+      'taskRequirements',
+      'nextTasks',
+      'map',
+      'objectives.description',
+      'objectives.count',
+      'objectives.maps',
+      'objectives.items',
+      'experience',
+      'money',
       // Reputation fields will be sorted alphabetically after these
     ];
 
     // Helper to get category label (handles dynamic reputation.TraderName fields)
     const getCategoryLabel = (field: string): string => {
-      if (field.startsWith("reputation.")) {
-        const trader = field.replace("reputation.", "");
+      if (field.startsWith('reputation.')) {
+        const trader = field.replace('reputation.', '');
         return `Reward: Reputation (${trader})`;
       }
       return categoryLabels[field] ?? field;
@@ -3258,25 +3257,25 @@ async function runBulkMode(
     ): void => {
       const freshness =
         d.wikiEditedPost1_0 === true
-          ? "🟢"
+          ? '🟢'
           : d.wikiEditedPost1_0 === false
-          ? "🔴"
-          : "⚪";
+          ? '🔴'
+          : '⚪';
       const editInfo =
-        d.wikiEditDaysAgo !== undefined ? `${d.wikiEditDaysAgo}d ago` : "";
+        d.wikiEditDaysAgo !== undefined ? `${d.wikiEditDaysAgo}d ago` : '';
       const priorityPrefix = showPriority
         ? `${priorityIcons[d.priority]} `
-        : "  ";
+        : '  ';
       const categoryInfo = showCategory
         ? ` ${dim(`[${getCategoryLabel(d.field)}]`)}`
-        : "";
+        : '';
 
       console.log(`\n${priorityPrefix}${d.taskName}${categoryInfo}`);
       console.log(`    ${dim(`ID: ${d.taskId}`)}`);
       console.log(`    API:  ${d.apiValue}`);
       console.log(
         `    Wiki: ${d.wikiValue} ${
-          d.trustsWiki ? dim("← likely correct") : ""
+          d.trustsWiki ? dim('← likely correct') : ''
         }`
       );
       if (editInfo) {
@@ -3311,10 +3310,10 @@ async function runBulkMode(
     });
 
     // Print summary
-    printHeader("SUMMARY");
+    printHeader('SUMMARY');
     console.log(`  Grouping by: ${bold(groupBy.toUpperCase())}`);
     console.log();
-    console.log("  By Priority:");
+    console.log('  By Priority:');
     for (const p of priorityOrder) {
       const count = byPriority.get(p)!.length;
       if (count > 0) {
@@ -3322,7 +3321,7 @@ async function runBulkMode(
       }
     }
     console.log();
-    console.log("  By Category:");
+    console.log('  By Category:');
     for (const field of sortedCategories) {
       const discs = byCategory.get(field)!;
       const label = getCategoryLabel(field);
@@ -3331,8 +3330,8 @@ async function runBulkMode(
     console.log();
 
     // Print details based on groupBy mode
-    if (groupBy === "category") {
-      printHeader("DISCREPANCIES BY CATEGORY");
+    if (groupBy === 'category') {
+      printHeader('DISCREPANCIES BY CATEGORY');
 
       for (const field of sortedCategories) {
         const discs = byCategory.get(field)!;
@@ -3344,9 +3343,9 @@ async function runBulkMode(
           return order[a.priority] - order[b.priority];
         });
 
-        console.log(`\n${"─".repeat(60)}`);
+        console.log(`\n${'─'.repeat(60)}`);
         console.log(`${bold(label)} (${discs.length})`);
-        console.log(`${"─".repeat(60)}`);
+        console.log(`${'─'.repeat(60)}`);
 
         for (const d of discs) {
           printDiscrepancy(d, true, false);
@@ -3354,7 +3353,7 @@ async function runBulkMode(
       }
     } else {
       // groupBy === 'priority'
-      printHeader("DISCREPANCIES BY PRIORITY");
+      printHeader('DISCREPANCIES BY PRIORITY');
 
       for (const p of priorityOrder) {
         const discs = byPriority.get(p)!;
@@ -3370,9 +3369,9 @@ async function runBulkMode(
           return a.field.localeCompare(b.field);
         });
 
-        console.log(`\n${"─".repeat(60)}`);
+        console.log(`\n${'─'.repeat(60)}`);
         console.log(`${bold(priorityLabels[p])} (${discs.length})`);
-        console.log(`${"─".repeat(60)}`);
+        console.log(`${'─'.repeat(60)}`);
 
         for (const d of discs) {
           printDiscrepancy(d, false, true);
@@ -3385,7 +3384,7 @@ async function runBulkMode(
   // Save results to file if requested
   if (options.output !== undefined) {
     ensureDir(RESULTS_DIR);
-    const groupBy = options.groupBy ?? "category";
+    const groupBy = options.groupBy ?? 'category';
     const timestamp = getTimestamp();
     const outputFile = path.join(RESULTS_DIR, `comparison-${timestamp}.json`);
 
@@ -3421,7 +3420,7 @@ async function runBulkMode(
         post1_0: post1_0Count,
         pre1_0: pre1_0Count,
         unknown: unknownCount,
-        note: "Tarkov 1.0 launched Nov 15, 2025. Post-1.0 wiki edits are high confidence.",
+        note: 'Tarkov 1.0 launched Nov 15, 2025. Post-1.0 wiki edits are high confidence.',
       },
       summary: {
         byPriority: {
@@ -3434,7 +3433,7 @@ async function runBulkMode(
         ),
       },
       // Primary grouping based on --group-by flag
-      discrepancies: groupBy === "category" ? byCategory : byPriority,
+      discrepancies: groupBy === 'category' ? byCategory : byPriority,
     };
     fs.writeFileSync(outputFile, JSON.stringify(results, null, 2));
     printSuccess(`Results saved to ${outputFile}`);
@@ -3449,15 +3448,15 @@ async function main(): Promise<void> {
     return;
   }
 
-  printHeader("WIKI TASK SPIKE");
+  printHeader('WIKI TASK SPIKE');
 
-  const gameMode = options.gameMode ?? "both";
+  const gameMode = options.gameMode ?? 'both';
   const modeLabel =
-    gameMode === "both"
-      ? "PVP + PVE (deduplicated)"
-      : gameMode === "regular"
-      ? "PVP only"
-      : "PVE only";
+    gameMode === 'both'
+      ? 'PVP + PVE (deduplicated)'
+      : gameMode === 'regular'
+      ? 'PVP only'
+      : 'PVE only';
 
   // Load or fetch API data
   let tasks: ExtendedTaskData[];
@@ -3489,6 +3488,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  printError("Wiki spike failed:", error as Error);
+  printError('Wiki spike failed:', error as Error);
   process.exit(1);
 });

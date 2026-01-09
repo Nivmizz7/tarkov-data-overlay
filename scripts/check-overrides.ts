@@ -116,7 +116,13 @@ function printResults(results: ValidationResult[]): void {
   const { stillNeeded, fixed, removedFromApi } = categorizeResults(results);
 
   // Still needed
-  console.log(formatCountLabel(`${icons.success} Still need overrides`, stillNeeded.length, 'green'));
+  console.log(
+    formatCountLabel(
+      `${icons.success} Still need overrides`,
+      stillNeeded.length,
+      'green'
+    )
+  );
   if (stillNeeded.length > 0) {
     for (const r of stillNeeded) {
       console.log(`  - ${r.name} (${r.id})`);
@@ -127,7 +133,13 @@ function printResults(results: ValidationResult[]): void {
   console.log();
 
   // Fixed in API
-  console.log(formatCountLabel(`${icons.sync} Fixed in API, can remove`, fixed.length, 'yellow'));
+  console.log(
+    formatCountLabel(
+      `${icons.sync} Fixed in API, can remove`,
+      fixed.length,
+      'yellow'
+    )
+  );
   if (fixed.length > 0) {
     for (const r of fixed) {
       console.log(`  - ${r.name} (${r.id})`);
@@ -138,7 +150,13 @@ function printResults(results: ValidationResult[]): void {
   console.log();
 
   // Removed from API
-  console.log(formatCountLabel(`${icons.trash} Removed from API, delete from overlay`, removedFromApi.length, 'red'));
+  console.log(
+    formatCountLabel(
+      `${icons.trash} Removed from API, delete from overlay`,
+      removedFromApi.length,
+      'red'
+    )
+  );
   if (removedFromApi.length > 0) {
     for (const r of removedFromApi) {
       console.log(`  - ${r.name} (${r.id})`);
@@ -152,7 +170,9 @@ function printResults(results: ValidationResult[]): void {
   const obsoleteCount = fixed.length + removedFromApi.length;
   if (obsoleteCount > 0) {
     console.log(`${icons.lightbulb} ${bold('RECOMMENDATION:')}`);
-    console.log(`   Update src/overrides/tasks.json5 to remove ${obsoleteCount} obsolete override(s)`);
+    console.log(
+      `   Update src/overrides/tasks.json5 to remove ${obsoleteCount} obsolete override(s)`
+    );
     console.log();
   }
 }

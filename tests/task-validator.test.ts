@@ -277,7 +277,9 @@ describe('validateTaskOverride', () => {
           },
         ],
       });
-      const override: TaskOverride = { map: { id: 'factory', name: 'Factory' } };
+      const override: TaskOverride = {
+        map: { id: 'factory', name: 'Factory' },
+      };
 
       const result = validateTaskOverride('test-task-id', override, [apiTask]);
 

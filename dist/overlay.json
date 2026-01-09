@@ -449,150 +449,179 @@
           "name": "Interchange"
         }
       ],
+      "map": null,
       "kappaRequired": false,
+      "factionName": "Any",
       "objectives": [
         {
           "id": "winter_2025_missing_in_action_obj01",
           "description": "Stash a Pack of Arseniy buckwheat at the Scav house on Woods",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
               "name": "Woods"
             }
           ],
-          "item": {
-            "id": "6389c6463485cf0eeb260715",
-            "name": "Pack of Arseniy buckwheat",
-            "shortName": "Buckwheat"
-          },
+          "items": [
+            {
+              "id": "6389c6463485cf0eeb260715",
+              "name": "Pack of Arseniy buckwheat",
+              "shortName": "Buckwheat"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_missing_in_action_obj02",
           "description": "Stash a Bottle of Tarkovskaya vodka at the Scav house on Woods",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
               "name": "Woods"
             }
           ],
-          "item": {
-            "id": "5d40407c86f774318526545a",
-            "name": "Bottle of Tarkovskaya vodka",
-            "shortName": "Vodka"
-          },
+          "items": [
+            {
+              "id": "5d40407c86f774318526545a",
+              "name": "Bottle of Tarkovskaya vodka",
+              "shortName": "Vodka"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_missing_in_action_obj03",
           "description": "Stash an Iskra ration pack at the Scav house on Woods",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
               "name": "Woods"
             }
           ],
-          "item": {
-            "id": "590c5d4b86f774784e1b9c45",
-            "name": "Iskra ration pack",
-            "shortName": "Iskra"
-          },
+          "items": [
+            {
+              "id": "590c5d4b86f774784e1b9c45",
+              "name": "Iskra ration pack",
+              "shortName": "Iskra"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_missing_in_action_obj04",
           "description": "Stash a Pack of Arseniy buckwheat at the guard barrack on Reserve",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5704e5fad2720bc05b8b4567",
               "name": "Reserve"
             }
           ],
-          "item": {
-            "id": "6389c6463485cf0eeb260715",
-            "name": "Pack of Arseniy buckwheat",
-            "shortName": "Buckwheat"
-          },
+          "items": [
+            {
+              "id": "6389c6463485cf0eeb260715",
+              "name": "Pack of Arseniy buckwheat",
+              "shortName": "Buckwheat"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_missing_in_action_obj05",
           "description": "Stash a Bottle of Tarkovskaya vodka at the guard barrack on Reserve",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5704e5fad2720bc05b8b4567",
               "name": "Reserve"
             }
           ],
-          "item": {
-            "id": "5d40407c86f774318526545a",
-            "name": "Bottle of Tarkovskaya vodka",
-            "shortName": "Vodka"
-          },
+          "items": [
+            {
+              "id": "5d40407c86f774318526545a",
+              "name": "Bottle of Tarkovskaya vodka",
+              "shortName": "Vodka"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_missing_in_action_obj06",
           "description": "Stash an Iskra ration pack at the guard barrack on Reserve",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5704e5fad2720bc05b8b4567",
               "name": "Reserve"
             }
           ],
-          "item": {
-            "id": "590c5d4b86f774784e1b9c45",
-            "name": "Iskra ration pack",
-            "shortName": "Iskra"
-          },
+          "items": [
+            {
+              "id": "590c5d4b86f774784e1b9c45",
+              "name": "Iskra ration pack",
+              "shortName": "Iskra"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_missing_in_action_obj07",
           "description": "Stash a Pack of Arseniy buckwheat at the Path to River shack on Interchange",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5714dbc024597771384a510d",
               "name": "Interchange"
             }
           ],
-          "item": {
-            "id": "6389c6463485cf0eeb260715",
-            "name": "Pack of Arseniy buckwheat",
-            "shortName": "Buckwheat"
-          },
+          "items": [
+            {
+              "id": "6389c6463485cf0eeb260715",
+              "name": "Pack of Arseniy buckwheat",
+              "shortName": "Buckwheat"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_missing_in_action_obj08",
           "description": "Stash a Bottle of Tarkovskaya vodka at the Path to River shack on Interchange",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5714dbc024597771384a510d",
               "name": "Interchange"
             }
           ],
-          "item": {
-            "id": "5d40407c86f774318526545a",
-            "name": "Bottle of Tarkovskaya vodka",
-            "shortName": "Vodka"
-          },
+          "items": [
+            {
+              "id": "5d40407c86f774318526545a",
+              "name": "Bottle of Tarkovskaya vodka",
+              "shortName": "Vodka"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_missing_in_action_obj09",
           "description": "Stash an Iskra ration pack at the Path to River shack on Interchange",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5714dbc024597771384a510d",
               "name": "Interchange"
             }
           ],
-          "item": {
-            "id": "590c5d4b86f774784e1b9c45",
-            "name": "Iskra ration pack",
-            "shortName": "Iskra"
-          },
+          "items": [
+            {
+              "id": "590c5d4b86f774784e1b9c45",
+              "name": "Iskra ration pack",
+              "shortName": "Iskra"
+            }
+          ],
           "count": 1
         }
       ],
@@ -657,7 +686,12 @@
           "name": "Customs"
         }
       ],
+      "map": {
+        "id": "56f40101d2720b2a4d8b45d6",
+        "name": "Customs"
+      },
       "kappaRequired": false,
+      "factionName": "Any",
       "taskRequirements": [
         {
           "task": {
@@ -670,6 +704,7 @@
         {
           "id": "winter_2025_clearing_the_way_obj01",
           "description": "Eliminate any 20 targets on Customs",
+          "type": "shoot",
           "maps": [
             {
               "id": "56f40101d2720b2a4d8b45d6",
@@ -732,7 +767,12 @@
           "name": "Woods"
         }
       ],
+      "map": {
+        "id": "5704e3c2d2720bac5b8b4567",
+        "name": "Woods"
+      },
       "kappaRequired": false,
+      "factionName": "Any",
       "taskRequirements": [
         {
           "task": {
@@ -745,6 +785,7 @@
         {
           "id": "winter_2025_come_by_the_fire_obj01",
           "description": "Locate and mark the first spot from Skier's route with an MS2000 Marker",
+          "type": "mark",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
@@ -760,6 +801,7 @@
         {
           "id": "winter_2025_come_by_the_fire_obj02",
           "description": "Locate and mark the second spot from Skier's route with an MS2000 Marker",
+          "type": "mark",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
@@ -775,6 +817,7 @@
         {
           "id": "winter_2025_come_by_the_fire_obj03",
           "description": "Locate and mark the third spot from Skier's route with an MS2000 Marker",
+          "type": "mark",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
@@ -790,6 +833,7 @@
         {
           "id": "winter_2025_come_by_the_fire_obj04",
           "description": "Locate and mark the fourth spot from Skier's route with an MS2000 Marker",
+          "type": "mark",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
@@ -805,10 +849,16 @@
         {
           "id": "winter_2025_come_by_the_fire_obj05",
           "description": "Eliminate any 5 targets while wearing a Pompon hat on Woods",
+          "type": "shoot",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
               "name": "Woods"
+            }
+          ],
+          "wearing": [
+            {
+              "id": "5b4329075acfc400153b78ff"
             }
           ],
           "count": 5
@@ -875,7 +925,12 @@
           "name": "Woods"
         }
       ],
+      "map": {
+        "id": "5704e3c2d2720bac5b8b4567",
+        "name": "Woods"
+      },
       "kappaRequired": false,
+      "factionName": "Any",
       "taskRequirements": [
         {
           "task": {
@@ -888,74 +943,92 @@
         {
           "id": "winter_2025_knuckle_sandwich_obj01",
           "description": "Stash a TP-200 TNT brick at the first spot from Skier's route",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
               "name": "Woods"
             }
           ],
-          "item": {
-            "id": "60391b0fb847c71012789415",
-            "name": "TP-200 TNT brick",
-            "shortName": "TP-200"
-          },
+          "items": [
+            {
+              "id": "60391b0fb847c71012789415",
+              "name": "TP-200 TNT brick",
+              "shortName": "TP-200"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_knuckle_sandwich_obj02",
           "description": "Stash a TP-200 TNT brick at the second spot from Skier's route",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
               "name": "Woods"
             }
           ],
-          "item": {
-            "id": "60391b0fb847c71012789415",
-            "name": "TP-200 TNT brick",
-            "shortName": "TP-200"
-          },
+          "items": [
+            {
+              "id": "60391b0fb847c71012789415",
+              "name": "TP-200 TNT brick",
+              "shortName": "TP-200"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_knuckle_sandwich_obj03",
           "description": "Stash a TP-200 TNT brick at the third spot from Skier's route",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
               "name": "Woods"
             }
           ],
-          "item": {
-            "id": "60391b0fb847c71012789415",
-            "name": "TP-200 TNT brick",
-            "shortName": "TP-200"
-          },
+          "items": [
+            {
+              "id": "60391b0fb847c71012789415",
+              "name": "TP-200 TNT brick",
+              "shortName": "TP-200"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_knuckle_sandwich_obj04",
           "description": "Stash a TP-200 TNT brick at the fourth spot from Skier's route",
+          "type": "plantItem",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
               "name": "Woods"
             }
           ],
-          "item": {
-            "id": "60391b0fb847c71012789415",
-            "name": "TP-200 TNT brick",
-            "shortName": "TP-200"
-          },
+          "items": [
+            {
+              "id": "60391b0fb847c71012789415",
+              "name": "TP-200 TNT brick",
+              "shortName": "TP-200"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_knuckle_sandwich_obj05",
           "description": "Eliminate any 15 targets while wearing a Ushanka ear flap hat on Woods",
+          "type": "shoot",
           "maps": [
             {
               "id": "5704e3c2d2720bac5b8b4567",
               "name": "Woods"
+            }
+          ],
+          "wearing": [
+            {
+              "id": "59e7708286f7742cbd762753"
             }
           ],
           "count": 15
@@ -1034,7 +1107,9 @@
           "name": "Woods"
         }
       ],
+      "map": null,
       "kappaRequired": false,
+      "factionName": "Any",
       "taskRequirements": [
         {
           "task": {
@@ -1047,6 +1122,7 @@
         {
           "id": "winter_2025_a_small_celebration_obj01",
           "description": "Launch a firework in the appropriate spot",
+          "type": "useItem",
           "maps": [
             {
               "id": "56f40101d2720b2a4d8b45d6",
@@ -1073,31 +1149,39 @@
               "name": "Woods"
             }
           ],
-          "item": {
-            "id": "675ea3d6312c0a5c4e04e317",
-            "name": "RSP-30 reactive signal cartridge (Firework)",
-            "shortName": "Firework"
-          },
+          "useAny": [
+            {
+              "id": "675ea3d6312c0a5c4e04e317",
+              "name": "RSP-30 reactive signal cartridge (Firework)",
+              "shortName": "Firework"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_a_small_celebration_obj02",
           "description": "Eat some Olivier salad",
-          "item": {
-            "id": "67586b7e49c2fa592e0d8ed9",
-            "name": "Olivier salad box",
-            "shortName": "Salad"
-          },
+          "type": "useItem",
+          "useAny": [
+            {
+              "id": "67586b7e49c2fa592e0d8ed9",
+              "name": "Olivier salad box",
+              "shortName": "Salad"
+            }
+          ],
           "count": 1
         },
         {
           "id": "winter_2025_a_small_celebration_obj03",
           "description": "Drink some vodka",
-          "item": {
-            "id": "5d40407c86f774318526545a",
-            "name": "Bottle of Tarkovskaya vodka",
-            "shortName": "Vodka"
-          },
+          "type": "useItem",
+          "useAny": [
+            {
+              "id": "5d40407c86f774318526545a",
+              "name": "Bottle of Tarkovskaya vodka",
+              "shortName": "Vodka"
+            }
+          ],
           "count": 1
         }
       ],
@@ -1141,6 +1225,7 @@
         "name": "Mechanic"
       },
       "kappaRequired": false,
+      "factionName": "Any",
       "taskRequirements": [
         {
           "task": {
@@ -1159,11 +1244,76 @@
         {
           "id": "setting_priorities_obj01",
           "description": "Eliminate 15 PMC operatives while using an active headset without wearing any armor",
+          "type": "shoot",
+          "wearing": [
+            {
+              "id": "5b432b965acfc47a8774094e"
+            },
+            {
+              "id": "5aa2ba71e5b5b000137b758f"
+            },
+            {
+              "id": "6033fa48ffd42c541047f728"
+            },
+            {
+              "id": "5a16b9fffcdbcb0176308b34"
+            },
+            {
+              "id": "5645bcc04bdc2d363b8b4572"
+            },
+            {
+              "id": "628e4e576d783146b124c64d"
+            },
+            {
+              "id": "5c165d832e2216398b5a7e36"
+            },
+            {
+              "id": "5e4d34ca86f774264f758330"
+            },
+            {
+              "id": "5f60cd6cf2bcbb675b00dac6"
+            }
+          ],
           "count": 15
         },
         {
           "id": "setting_priorities_obj02",
           "description": "Eliminate 15 PMC operatives while wearing the TSh-4M-L soft tank crew helmet without wearing any active headset",
+          "type": "shoot",
+          "wearing": [
+            {
+              "id": "5df8a58286f77412631087ed"
+            }
+          ],
+          "notWearing": [
+            {
+              "id": "5b432b965acfc47a8774094e"
+            },
+            {
+              "id": "5aa2ba71e5b5b000137b758f"
+            },
+            {
+              "id": "6033fa48ffd42c541047f728"
+            },
+            {
+              "id": "5a16b9fffcdbcb0176308b34"
+            },
+            {
+              "id": "5645bcc04bdc2d363b8b4572"
+            },
+            {
+              "id": "628e4e576d783146b124c64d"
+            },
+            {
+              "id": "5c165d832e2216398b5a7e36"
+            },
+            {
+              "id": "5e4d34ca86f774264f758330"
+            },
+            {
+              "id": "5f60cd6cf2bcbb675b00dac6"
+            }
+          ],
           "count": 15
         }
       ],
@@ -1199,6 +1349,7 @@
         "name": "Prapor"
       },
       "kappaRequired": false,
+      "factionName": "Any",
       "taskRequirements": [
         {
           "task": {
@@ -1211,6 +1362,7 @@
         {
           "id": "no_questions_asked_obj01",
           "description": "Hand over 2 found in raid Red Rebel ice picks",
+          "type": "giveItem",
           "items": [
             {
               "id": "5c0126f40db834002a125382",
@@ -1247,7 +1399,7 @@
   },
   "$meta": {
     "version": "1.0.0",
-    "generated": "2026-01-09T05:24:20.913Z",
-    "sha256": "e749eec5630ea6cad70ccd061bac169106216198ad201870b6e8d403fb1d8d50"
+    "generated": "2026-01-09T07:35:42.079Z",
+    "sha256": "e5df2ea8c68fe5f566b36be081eb18276053df09d397ce2e6ea363638f31d3ef"
   }
 }

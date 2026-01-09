@@ -1,41 +1,48 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "overlay.schema.json",
-  "title": "Tarkov Data Overlay",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
   "description": "Root schema for compiled overlay output",
-  "type": "object",
   "properties": {
+    "$meta": {
+      "description": "Build metadata",
+      "properties": {
+        "generated": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": ["version", "generated"],
+      "type": "object"
+    },
+    "editions": {
+      "$ref": "edition.schema.json"
+    },
+    "hideout": {
+      "description": "Hideout corrections",
+      "type": "object"
+    },
+    "items": {
+      "description": "Item corrections",
+      "type": "object"
+    },
     "tasks": {
       "$ref": "task-override.schema.json"
     },
     "tasksAdd": {
       "$ref": "task-additions.schema.json"
     },
-    "items": {
-      "type": "object",
-      "description": "Item corrections"
-    },
     "traders": {
-      "type": "object",
-      "description": "Trader corrections"
-    },
-    "hideout": {
-      "type": "object",
-      "description": "Hideout corrections"
-    },
-    "editions": {
-      "$ref": "edition.schema.json"
-    },
-    "$meta": {
-      "type": "object",
-      "properties": {
-        "version": { "type": "string" },
-        "generated": { "type": "string", "format": "date-time" },
-        "sha256": { "type": "string" }
-      },
-      "required": ["version", "generated"],
-      "description": "Build metadata"
+      "description": "Trader corrections",
+      "type": "object"
     }
   },
-  "additionalProperties": false
+  "title": "Tarkov Data Overlay",
+  "type": "object"
 }

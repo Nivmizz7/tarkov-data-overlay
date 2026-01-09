@@ -4,18 +4,18 @@
   // tarkov.dev shows 8 kills, wiki confirms 5 kills
   // tarkov.dev shows no prerequisites, wiki shows "Previous: Shooting Cans"
   // tarkov.dev shows 18000 XP, game confirms 12500 XP
-  "5c0d190cd09282029f5390d8": {
+  '5c0d190cd09282029f5390d8': {
     experience: 12500, // Was: 18000
     objectives: {
-      "5c1b760686f77412780211a3": {
+      '5c1b760686f77412780211a3': {
         count: 5, // Was: 8
       },
     },
     taskRequirements: [
       {
         task: {
-          id: "657315df034d76585f032e01",
-          name: "Shooting Cans",
+          id: '657315df034d76585f032e01',
+          name: 'Shooting Cans',
         },
       },
     ], // Was: [] (empty)
@@ -24,19 +24,19 @@
   // Half Empty - Name and wiki link incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Half_Empty
   // tarkov.dev shows "Half-Empty" with hyphen, should be space
-  "6740a2c17e3818d5bb0648b6": {
-    name: "Half Empty", // Was: "Half-Empty"
-    wikiLink: "https://escapefromtarkov.fandom.com/wiki/Half_Empty", // Was: https://escapefromtarkov.fandom.com/wiki/Half-Empty
+  '6740a2c17e3818d5bb0648b6': {
+    name: 'Half Empty', // Was: "Half-Empty"
+    wikiLink: 'https://escapefromtarkov.fandom.com/wiki/Half_Empty', // Was: https://escapefromtarkov.fandom.com/wiki/Half-Empty
   },
 
   // Sales Night - Objective count missing and description wording incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Sales_Night
   // tarkov.dev objective lacks count; wiki specifies 7 extracts on Interchange
-  "5ae449c386f7744bde357697": {
+  '5ae449c386f7744bde357697': {
     objectives: {
-      "5bb60cbc88a45011a8235cc5": {
+      '5bb60cbc88a45011a8235cc5': {
         count: 7, // Was: undefined
-        description: "Survive and extract on Interchange 7 times", // Was: "Survive and extract from Interchange"
+        description: 'Survive and extract on Interchange 7 times', // Was: "Survive and extract from Interchange"
       },
     },
   },
@@ -44,7 +44,7 @@
   // A Shooter Born in Heaven - Experience incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/A_Shooter_Born_in_Heaven
   // Verified in-game: 55000 XP
-  "5c0bde0986f77479cf22c2f8": {
+  '5c0bde0986f77479cf22c2f8': {
     experience: 55000, // Was: 12500
   },
 
@@ -52,17 +52,17 @@
   // Proof: https://escapefromtarkov.fandom.com/wiki/Test_Drive_-_Part_1
   // Verified in-game: 9100 XP, 10 kills required
   // Recent wiki update (post-1.0); not verified in-game (weapon requirement)
-  "5c0bd94186f7747a727f09b2": {
+  '5c0bd94186f7747a727f09b2': {
     experience: 9100, // Was: 18200
     objectives: {
-      "5c1b765d86f77413193fa4f2": {
+      '5c1b765d86f77413193fa4f2': {
         count: 10, // Was: 5
-        description: "Eliminate PMC operatives using an SR-25 with Hybrid 46 suppressor and Schmidt & Bender PM II 1-8x24 scope",
+        description: 'Eliminate PMC operatives using an SR-25 with Hybrid 46 suppressor and Schmidt & Bender PM II 1-8x24 scope',
         usingWeapon: [
           {
-            id: "5df8ce05b11454561e39243b",
+            id: '5df8ce05b11454561e39243b',
             name: "Knight's Armament Company SR-25 7.62x51 marksman rifle",
-            shortName: "SR-25",
+            shortName: 'SR-25',
           },
         ],
       },
@@ -72,51 +72,51 @@
   // Hell on Earth - Part 1 - Experience incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Hell_on_Earth_-_Part_1
   // Verified in-game: 2300 XP
-  "666314b0acf8442f8b0531a1": {
+  '666314b0acf8442f8b0531a1': {
     experience: 2300, // Was: 15600
   },
 
   // Hell on Earth - Part 2 - Experience incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Hell_on_Earth_-_Part_2
   // Verified in-game: 16000 XP
-  "666314b2a9290f9e0806cca3": {
+  '666314b2a9290f9e0806cca3': {
     experience: 16000, // Was: 98000
   },
 
   // Pyramid Scheme - Experience incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Pyramid_Scheme
   // Verified in-game: 12400 XP
-  "6572e876dc0d635f633a5714": {
+  '6572e876dc0d635f633a5714': {
     experience: 12400, // Was: 25500
   },
 
   // Athlete - Experience incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Athlete
   // Verified in-game: 3500 XP
-  "5c0d0d5086f774363760aef2": {
+  '5c0d0d5086f774363760aef2': {
     experience: 3500, // Was: 21900
   },
 
   // Dandies - Experience incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Dandies
   // Verified in-game: 11000 XP
-  "65734c186dc1e402c80dc19e": {
+  '65734c186dc1e402c80dc19e': {
     experience: 11000, // Was: 33000
   },
 
   // Decontamination Service - Experience incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Decontamination_Service
   // Verified in-game: 12500 XP
-  "5c0d1c4cd0928202a02a6f5c": {
+  '5c0d1c4cd0928202a02a6f5c': {
     experience: 12500, // Was: 30500
   },
 
   // Easy Job - Part 2 - Objective count incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Easy_Job_-_Part_2
   // Verified in-game: 10 kills required
-  "6179acbdc760af5ad2053585": {
+  '6179acbdc760af5ad2053585': {
     objectives: {
-      "617bd94c5a52d2390a2630c7": {
+      '617bd94c5a52d2390a2630c7': {
         count: 10, // Was: 20
       },
     },
@@ -125,9 +125,9 @@
   // Long Road - Objective count incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Long_Road
   // Verified in-game: 4 extracts required
-  "6193850f60b34236ee0483de": {
+  '6193850f60b34236ee0483de': {
     objectives: {
-      "6193dabd5f6468204470571f": {
+      '6193dabd5f6468204470571f': {
         count: 4, // Was: 8
       },
     },
@@ -136,13 +136,13 @@
   // To Great Heights! - Part 4 [PVP ZONE] - Money reward incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/To_Great_Heights!_-_Part_4
   // Verified in-game: 2,500,000 Roubles
-  "66058cc72cee99303f1ba069": {
+  '66058cc72cee99303f1ba069': {
     finishRewards: {
       items: [
         {
           item: {
-            id: "5449016a4bdc2d6f028b456f",
-            name: "Roubles",
+            id: '5449016a4bdc2d6f028b456f',
+            name: 'Roubles',
           },
           count: 2500000, // Was: 1000002
         },
@@ -152,16 +152,16 @@
 
   // Collector - Missing objective items
   // Proof: https://media.discordapp.net/attachments/939662655306727525/1454719855935754354/image.png?ex=6956ba31&is=695568b1&hm=4f32259e81560c12ad91ddfab68d5d25325b27218ac782862ad4db2e04813668&=&format=webp&quality=lossless
-  "5c51aac186f77432ea65c552": {
+  '5c51aac186f77432ea65c552': {
     objectivesAdd: [
       {
-        id: "collector-missing-items-1",
-        description: "Hand over the found in raid Collector items",
+        id: 'collector-missing-items-1',
+        description: 'Hand over the found in raid Collector items',
         items: [
-          { id: "69398e94ca94fd2877039504", name: "Nut Sack balaclava" },
-          { id: "6937edb912d456a817083e82", name: "Mazoni golden dumbbell" },
-          { id: "6937ecf8628ee476240c07cb", name: "Tigzresq splint" },
-          { id: "6937f02dfd6488bb27024839", name: "Domontovich ushanka hat" },
+          { id: '69398e94ca94fd2877039504', name: 'Nut Sack balaclava' },
+          { id: '6937edb912d456a817083e82', name: 'Mazoni golden dumbbell' },
+          { id: '6937ecf8628ee476240c07cb', name: 'Tigzresq splint' },
+          { id: '6937f02dfd6488bb27024839', name: 'Domontovich ushanka hat' },
         ],
       },
     ],
@@ -171,32 +171,32 @@
   // Test Drive - Part 2 - Objective description/maps and experience incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Test_Drive_-_Part_2
   // Recent wiki update (post-1.0); not verified in-game
-  "63a5cf262964a7488f5243ce": {
+  '63a5cf262964a7488f5243ce': {
     experience: 12000, // Was: 28000
     map: null, // Was: { id: "5714dc692459777137212e12", name: "Streets of Tarkov" }
     objectives: {
-      "63a5cf262964a7488f5243d1": {
-        description: "Eliminate PMC operatives while using an MP5SD with PRO sight on Streets of Tarkov, Ground Zero or Interchange",
+      '63a5cf262964a7488f5243d1': {
+        description: 'Eliminate PMC operatives while using an MP5SD with PRO sight on Streets of Tarkov, Ground Zero or Interchange',
         usingWeapon: [
           {
-            id: "59411abb86f77478f702b5d2",
-            name: "HK MP5 9x19 submachine gun (Navy 3 Round Burst) SD",
-            shortName: "MP5 SD",
+            id: '59411abb86f77478f702b5d2',
+            name: 'HK MP5 9x19 submachine gun (Navy 3 Round Burst) SD',
+            shortName: 'MP5 SD',
           },
         ],
         usingWeaponMods: [
           [
             {
-              id: "61659f79d92c473c770213ee",
-              name: "Aimpoint PRO reflex sight",
-              shortName: "PRO",
+              id: '61659f79d92c473c770213ee',
+              name: 'Aimpoint PRO reflex sight',
+              shortName: 'PRO',
             },
           ],
         ],
         maps: [
-          { id: "5714dc692459777137212e12", name: "Streets of Tarkov" },
-          { id: "653e6760052c01c1c805532f", name: "Ground Zero" },
-          { id: "5714dbc024597771384a510d", name: "Interchange" },
+          { id: '5714dc692459777137212e12', name: 'Streets of Tarkov' },
+          { id: '653e6760052c01c1c805532f', name: 'Ground Zero' },
+          { id: '5714dbc024597771384a510d', name: 'Interchange' },
         ],
       },
     },
@@ -205,16 +205,16 @@
   // Test Drive - Part 3 - Objective description/maps and experience incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Test_Drive_-_Part_3
   // Recent wiki update (post-1.0); not verified in-game
-  "64f5deac39e45b527a7c4232": {
+  '64f5deac39e45b527a7c4232': {
     experience: 18000, // Was: 35300
     map: null, // Was: { id: "5704e4dad2720bb55b8b4567", name: "Lighthouse" }
     objectives: {
-      "64f5deac39e45b527a7c4235": {
-        description: "Eliminate PMC operatives while using an AK-12 with the proprietary suppressor and PS-320 scope on Lighthouse, Customs, or Reserve",
+      '64f5deac39e45b527a7c4235': {
+        description: 'Eliminate PMC operatives while using an AK-12 with the proprietary suppressor and PS-320 scope on Lighthouse, Customs, or Reserve',
         maps: [
-          { id: "5704e4dad2720bb55b8b4567", name: "Lighthouse" },
-          { id: "56f40101d2720b2a4d8b45d6", name: "Customs" },
-          { id: "5704e5fad2720bc05b8b4567", name: "Reserve" },
+          { id: '5704e4dad2720bb55b8b4567', name: 'Lighthouse' },
+          { id: '56f40101d2720b2a4d8b45d6', name: 'Customs' },
+          { id: '5704e5fad2720bc05b8b4567', name: 'Reserve' },
         ],
       },
     },
@@ -223,25 +223,25 @@
   // Test Drive - Part 4 - Objective description/maps/items and experience incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Test_Drive_-_Part_4
   // Recent wiki update (post-1.0); not verified in-game
-  "6574e0dedc0d635f633a5805": {
+  '6574e0dedc0d635f633a5805': {
     experience: 20000, // Was: 40000
     map: null, // Was: { id: "5704e554d2720bac5b8b456e", name: "Shoreline" }
     objectives: {
-      "6574e0dedc0d635f633a5807": {
-        description: "Eliminate any targets while using an RPDN with EKP-1S-03 sight on Shoreline, Interchange or Woods",
+      '6574e0dedc0d635f633a5807': {
+        description: 'Eliminate any targets while using an RPDN with EKP-1S-03 sight on Shoreline, Interchange or Woods',
         usingWeaponMods: [
           [
             {
-              id: "6544d4187c5457729210d277",
-              name: "Axion Kobra EKP-1S-03 reflex sight (Dovetail)",
-              shortName: "EKP-1S-03",
+              id: '6544d4187c5457729210d277',
+              name: 'Axion Kobra EKP-1S-03 reflex sight (Dovetail)',
+              shortName: 'EKP-1S-03',
             },
           ],
         ],
         maps: [
-          { id: "5704e554d2720bac5b8b456e", name: "Shoreline" },
-          { id: "5714dbc024597771384a510d", name: "Interchange" },
-          { id: "5704e3c2d2720bac5b8b4567", name: "Woods" },
+          { id: '5704e554d2720bac5b8b456e', name: 'Shoreline' },
+          { id: '5714dbc024597771384a510d', name: 'Interchange' },
+          { id: '5704e3c2d2720bac5b8b4567', name: 'Woods' },
         ],
       },
     },
@@ -250,44 +250,44 @@
   // Test Drive - Part 5 - Objective description/items and rewards incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Test_Drive_-_Part_5
   // Recent wiki update (post-1.0); not verified in-game
-  "669fa3a40c828825de06d6a1": {
+  '669fa3a40c828825de06d6a1': {
     experience: 23000, // Was: 50000
     finishRewards: {
       items: [
         {
           item: {
-            id: "5449016a4bdc2d6f028b456f",
-            name: "Roubles",
+            id: '5449016a4bdc2d6f028b456f',
+            name: 'Roubles',
           },
           count: 500000, // Was: 520000
         },
       ],
     },
     objectives: {
-      "66a0f5a7f9eae6761253114c": {
-        description: "Eliminate any targets while using an SR-2M with suppressor and KP-SR2 sight on Factory",
+      '66a0f5a7f9eae6761253114c': {
+        description: 'Eliminate any targets while using an SR-2M with suppressor and KP-SR2 sight on Factory',
         usingWeapon: [
           {
-            id: "62e14904c2699c0ec93adc47",
-            name: "SR-2M Veresk 9x21 submachine gun",
-            shortName: "SR-2M",
+            id: '62e14904c2699c0ec93adc47',
+            name: 'SR-2M Veresk 9x21 submachine gun',
+            shortName: 'SR-2M',
           },
         ],
         usingWeaponMods: [
           [
             {
-              id: "62e2a7138e1ac9380579c122",
-              name: "SR-2M 9x21 SV-1381 sound suppressor",
-              shortName: "SV-1381",
+              id: '62e2a7138e1ac9380579c122',
+              name: 'SR-2M 9x21 SV-1381 sound suppressor',
+              shortName: 'SV-1381',
             },
             {
-              id: "62ff9920fe938a24c90c10d2",
-              name: "SR-2M KP-SR2 reflex sight",
-              shortName: "KP-SR2",
+              id: '62ff9920fe938a24c90c10d2',
+              name: 'SR-2M KP-SR2 reflex sight',
+              shortName: 'KP-SR2',
             },
           ],
         ],
-        maps: [{ id: "55f2d3fd4bdc2d5f408b4567", name: "Factory" }],
+        maps: [{ id: '55f2d3fd4bdc2d5f408b4567', name: 'Factory' }],
       },
     },
   },
@@ -295,12 +295,12 @@
   // Test Drive - Part 6 - Experience and reputation incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Test_Drive_-_Part_6
   // Recent wiki update (post-1.0); not verified in-game
-  "675c1ff1a757ddd00404f0aa": {
+  '675c1ff1a757ddd00404f0aa': {
     experience: 32000, // Was: 65000
     finishRewards: {
       traderStanding: [
         {
-          trader: { name: "Prapor" },
+          trader: { name: 'Prapor' },
           standing: 0.02, // Was: 0.03
         },
       ],
@@ -310,9 +310,9 @@
   // No Swiping - Objective count incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/No_Swiping
   // Recent wiki update (post-1.0); 25 kills to 10
-  "658027799634223183395339": {
+  '658027799634223183395339': {
     objectives: {
-      "65802779963422318339533c": {
+      '65802779963422318339533c': {
         count: 10, // Was: 25
       },
     },
@@ -320,18 +320,18 @@
 
   // Forced Alliance - Task removed from standard gameplay
   // Proof: https://escapefromtarkov.fandom.com/wiki/Forced_Alliance
-  "67a0966817e34930e500754c": {
+  '67a0966817e34930e500754c': {
     disabled: true, // Was: undefined
   },
 
   // Offensive Reconnaissance - Prerequisite should be Hidden Layer
   // Proof: https://escapefromtarkov.fandom.com/wiki/Offensive_Reconnaissance
-  "67a0970744893b9f3f0d9b68": {
+  '67a0970744893b9f3f0d9b68': {
     taskRequirements: [
       {
         task: {
-          id: "67a096577e86e067eb045733",
-          name: "Hidden Layer",
+          id: '67a096577e86e067eb045733',
+          name: 'Hidden Layer',
         },
       },
     ], // Was: Forced Alliance (67a0966817e34930e500754c)
@@ -340,20 +340,20 @@
   // Escort - Level requirement incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Escort
   // User confirmed: level 46 required, not 60
-  "60e71b62a0beca400d69efc4": {
+  '60e71b62a0beca400d69efc4': {
     minPlayerLevel: 46, // Was: 60
   },
 
   // Forester's Duty - objectives description incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Forester%27s_Duty
   // Recent wiki update (post-1.0)
-  "66ab9da7eb102b9bcd08591c": {
+  '66ab9da7eb102b9bcd08591c': {
     objectives: {
-      "66ab9da7eb102b9bcd08591d": {
-        description: "Eliminate 5 Scavs on Lighthouse (In one raid)", // Was: Eliminate Scavs at the village on Lighthouse (In one raid)
+      '66ab9da7eb102b9bcd08591d': {
+        description: 'Eliminate 5 Scavs on Lighthouse (In one raid)', // Was: Eliminate Scavs at the village on Lighthouse (In one raid)
       },
-      "66ab9da7eb102b9bcd085922": {
-        description: "Eliminate 5 Scavs on Shoreline (In one raid)", // Was: Eliminate Scavs at the village on Shoreline (In one raid)
+      '66ab9da7eb102b9bcd085922': {
+        description: 'Eliminate 5 Scavs on Shoreline (In one raid)', // Was: Eliminate Scavs at the village on Shoreline (In one raid)
       },
     },
   },
@@ -361,15 +361,14 @@
   // Small Business - Part 3 - objectives description were swapped incorrectly
   // Proof: https://escapefromtarkov.fandom.com/wiki/Small_Business_-_Part_3
   // Verified by TT map and Wiki review.
-  "66631493312343839d032d22": {
+  '66631493312343839d032d22': {
     objectives: {
-      "666733e565831d5bafa18bbb": {
-        description: "Stash a Cultist knife at the sawmill marked circle on Woods", // Was: Stash a Cultist knife at the river village marked circle on Woods
+      '666733e565831d5bafa18bbb': {
+        description: 'Stash a Cultist knife at the sawmill marked circle on Woods', // Was: Stash a Cultist knife at the river village marked circle on Woods
       },
-      "666733e7430c8972d6a5f438": {
-        description: "Stash a Cultist knife at the river village marked circle on Woods", // Was: Stash a Cultist knife at the sawmill marked circle on Woods
+      '666733e7430c8972d6a5f438': {
+        description: 'Stash a Cultist knife at the river village marked circle on Woods', // Was: Stash a Cultist knife at the sawmill marked circle on Woods
       },
     },
-  }
-
+  },
 }

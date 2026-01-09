@@ -79,7 +79,7 @@ function validateFile(
     const valid = validator(data) as boolean;
     const errors = valid
       ? undefined
-      : validator.errors?.map(e => `${e.instancePath}: ${e.message}`);
+      : validator.errors?.map((e) => `${e.instancePath}: ${e.message}`);
 
     return { file: displayPath, valid, errors };
   } catch (error) {
