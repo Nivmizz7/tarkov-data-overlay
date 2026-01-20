@@ -316,6 +316,9 @@
           "description": "Stash a Cultist knife at the river village marked circle on Woods"
         }
       }
+    },
+    "5c0d4e61d09282029f53920e": {
+      "minPlayerLevel": 32
     }
   },
   "editions": {
@@ -730,7 +733,7 @@
   },
   "$meta": {
     "version": "1.0.0",
-    "generated": "2026-01-17T03:07:07.841Z",
-    "sha256": "ce98428d8d4e7063a449f67797d62e015f9395bd92d002bed5d884f867d5834f"
+    "generated": "2026-01-20T20:07:30.586Z",
+    "sha256": "a52e4d7805db1930e46a5450b02ea4fda295564a5f1a63ff119dff373d0fb69f"
   }
 }
