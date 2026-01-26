@@ -68,19 +68,23 @@ function normalizeRemoteUrl(input) {
   if (!input) {
     return input;
   }
-  if (input.includes("github.com") && input.includes("/blob/")) {
+  try {
     const url = new URL(input);
-    const parts = url.pathname.split("/").filter(Boolean);
-    const blobIndex = parts.indexOf("blob");
-    if (blobIndex > -1) {
-      const owner = parts[0];
-      const repo = parts[1];
-      const branch = parts[blobIndex + 1];
-      const filePath = parts.slice(blobIndex + 2).join("/");
-      if (owner && repo && branch && filePath) {
-        return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`;
+    if (url.hostname === "github.com" && url.pathname.includes("/blob/")) {
+      const parts = url.pathname.split("/").filter(Boolean);
+      const blobIndex = parts.indexOf("blob");
+      if (blobIndex > -1) {
+        const owner = parts[0];
+        const repo = parts[1];
+        const branch = parts[blobIndex + 1];
+        const filePath = parts.slice(blobIndex + 2).join("/");
+        if (owner && repo && branch && filePath) {
+          return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`;
+        }
       }
     }
+  } catch {
+    return input;
   }
   return input;
 }
