@@ -12,17 +12,26 @@ export interface TaskOverride {
   wikiLink?: string;
   disabled?: boolean;
   map?: { id: string; name: string } | null;
+  maps?: Array<{ id: string; name: string }>;
   kappaRequired?: boolean;
   lightkeeperRequired?: boolean;
+  factionName?: string;
+  requiredPrestige?: { id?: string; name: string; prestigeLevel: number };
   objectives?: Record<string, ObjectiveOverride>;
   objectivesAdd?: ObjectiveAdd[];
   taskRequirements?: TaskRequirement[];
+  traderRequirements?: Array<{
+    trader: { id: string; name: string };
+    value: number;
+    compareMethod?: string;
+  }>;
   experience?: number;
-  finishRewards?: TaskFinishRewards;
+  startRewards?: TaskRewards;
+  finishRewards?: TaskRewards;
 }
 
 /** Task completion rewards */
-export interface TaskFinishRewards {
+export interface TaskRewards {
   items?: Array<{ item: { id?: string; name: string; shortName?: string }; count: number }>;
   traderStanding?: Array<{ trader: { id?: string; name: string }; standing: number }>;
   offerUnlock?: Array<{
@@ -31,6 +40,12 @@ export interface TaskFinishRewards {
     level: number;
     item: { id?: string; name: string; shortName?: string };
   }>;
+  skillLevelReward?: Array<{
+    name: string;
+    level: number;
+    skill?: { id: string; name: string; imageLink?: string };
+  }>;
+  traderUnlock?: { id: string; name: string };
 }
 
 /** Task objective from tarkov.dev API */
@@ -50,6 +65,16 @@ export interface TaskObjective {
   containsAll?: TaskItemRef[];
   requiredKeys?: Array<TaskItemRef[]>;
   foundInRaid?: boolean;
+  zones?: ObjectiveZone[];
+  possibleLocations?: ObjectivePossibleLocation[];
+  wearing?: TaskItemRef[];
+  notWearing?: TaskItemRef[];
+  minDurability?: number;
+  maxDurability?: number;
+  distance?: number;
+  timeFromHour?: number;
+  timeUntilHour?: number;
+  optional?: boolean;
 }
 
 /** Task item reference */
@@ -57,6 +82,32 @@ export interface TaskItemRef {
   id: string;
   name: string;
   shortName?: string;
+}
+
+export interface ObjectiveZone {
+  map?: { id: string; name: string };
+  outline?: Array<{ x: number; y?: number; z: number }>;
+  position?: { x: number; y?: number; z: number };
+  top?: number;
+  bottom?: number;
+}
+
+export interface ObjectiveZoneAdd extends Omit<ObjectiveZone, "map" | "outline"> {
+  map: { id: string; name: string };
+  outline: Array<{ x: number; y?: number; z: number }>;
+}
+
+export interface ObjectivePossibleLocation {
+  map?: { id: string; name: string };
+  positions?: Array<{ x: number; y?: number; z: number }>;
+}
+
+export interface ObjectivePossibleLocationAdd extends Omit<
+  ObjectivePossibleLocation,
+  "map" | "positions"
+> {
+  map: { id: string; name: string };
+  positions: Array<{ x: number; y?: number; z: number }>;
 }
 
 /** Objective override for nested corrections */
@@ -72,10 +123,15 @@ export interface TaskItemRefAdd {
 
 /** Objective addition for missing objectives */
 export interface ObjectiveAdd
-  extends Omit<Partial<TaskObjective>, "id" | "description" | "items"> {
+  extends Omit<
+    Partial<TaskObjective>,
+    "id" | "description" | "items" | "zones" | "possibleLocations"
+  > {
   id: string;
   description: string;
   items?: TaskItemRefAdd[];
+  zones?: ObjectiveZoneAdd[];
+  possibleLocations?: ObjectivePossibleLocationAdd[];
 }
 
 /** Task requirement reference */
@@ -92,10 +148,19 @@ export interface TaskAddition {
   trader: { id?: string; name: string };
   map?: { id: string; name: string } | null;
   maps?: Array<{ id: string; name: string }>;
+  minPlayerLevel?: number;
+  factionName?: string;
+  requiredPrestige?: { id?: string; name: string; prestigeLevel: number };
   objectives: TaskObjectiveAdd[];
   taskRequirements?: TaskRequirement[];
+  traderRequirements?: Array<{
+    trader: { id: string; name: string };
+    value: number;
+    compareMethod?: string;
+  }>;
   experience?: number;
-  finishRewards?: TaskFinishRewards;
+  startRewards?: TaskRewards;
+  finishRewards?: TaskRewards;
   kappaRequired?: boolean;
   lightkeeperRequired?: boolean;
   disabled?: boolean;
@@ -103,9 +168,11 @@ export interface TaskAddition {
 
 /** Objective definition for task additions */
 export interface TaskObjectiveAdd
-  extends Omit<Partial<TaskObjective>, "id" | "description"> {
+  extends Omit<Partial<TaskObjective>, "id" | "description" | "zones" | "possibleLocations"> {
   id: string;
   description: string;
+  zones?: ObjectiveZoneAdd[];
+  possibleLocations?: ObjectivePossibleLocationAdd[];
 }
 
 /** Task data from tarkov.dev API */
@@ -115,10 +182,18 @@ export interface TaskData {
   minPlayerLevel?: number;
   wikiLink?: string;
   map?: { id: string; name: string } | null;
+  factionName?: string;
+  requiredPrestige?: { id?: string; name: string; prestigeLevel: number };
   taskRequirements?: TaskRequirement[];
+  traderRequirements?: Array<{
+    trader: { id: string; name: string };
+    value: number;
+    compareMethod?: string;
+  }>;
   objectives?: TaskObjective[];
   experience?: number;
-  finishRewards?: TaskFinishRewards;
+  startRewards?: TaskRewards;
+  finishRewards?: TaskRewards;
 }
 
 /** Validation result for a single override */

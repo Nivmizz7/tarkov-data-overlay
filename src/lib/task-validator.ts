@@ -213,7 +213,10 @@ const validateTaskRequirements: FieldValidator = (override, apiTask) => {
   if (override.taskRequirements === undefined) return null;
 
   const apiReqs = (apiTask.taskRequirements || []).filter(
-    (r) => !r.status || !r.status.includes('active')
+    (r) =>
+      !(r.status ?? []).some((status) =>
+        ['active', 'accepted'].includes(status.trim().toLowerCase())
+      )
   );
   const overrideReqs = override.taskRequirements;
 
@@ -256,7 +259,10 @@ const FIELD_VALIDATORS: FieldValidator[] = [
   createFieldValidator('wikiLink'),
   validateMap,
   createFieldValidator('experience'),
+  createFieldValidator('startRewards'),
   createFieldValidator('finishRewards'),
+  createFieldValidator('factionName'),
+  createFieldValidator('requiredPrestige'),
   validateTaskRequirements,
 ];
 

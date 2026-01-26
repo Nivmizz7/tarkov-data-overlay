@@ -217,6 +217,12 @@ npm run build
 
 ---
 
+## Master Samples
+
+See `docs/MASTER_SAMPLES.md` for the comprehensive, copy-paste JSON5 master reference.
+
+---
+
 ## Questions?
 
 Open an issue or reach out on Discord.
