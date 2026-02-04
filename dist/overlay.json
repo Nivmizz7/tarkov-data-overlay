@@ -532,6 +532,50 @@
           }
         ]
       }
+    },
+    "68481881f43abfdda2058369": {
+      "wikiLink": "https://escapefromtarkov.fandom.com/wiki/New_Beginning_(Prestige_4)",
+      "objectives": {
+        "68481881f43abfdda205836f": {
+          "maps": [
+            {
+              "id": "5b0fc42d86f7744a585f9105",
+              "name": "The Lab"
+            },
+            {
+              "id": "5714dc692459777137212e12",
+              "name": "Streets of Tarkov"
+            }
+          ]
+        }
+      },
+      "objectivesAdd": [
+        {
+          "id": "new_beginning_4_obj_extract_interchange",
+          "description": "Survive and extract from Interchange",
+          "type": "extract",
+          "maps": [
+            {
+              "id": "5714dbc024597771384a510d",
+              "name": "Interchange"
+            }
+          ],
+          "exitStatus": [
+            "Survived"
+          ],
+          "count": 1
+        }
+      ],
+      "finishRewards": {
+        "traderStanding": [
+          {
+            "trader": {
+              "name": "Ragman"
+            },
+            "standing": 0.1
+          }
+        ]
+      }
     }
   },
   "editions": {
@@ -1165,7 +1209,7 @@
   },
   "$meta": {
     "version": "1.0.0",
-    "generated": "2026-02-04T10:34:20.314Z",
-    "sha256": "443e4c0da6cc765ba1ffca249ebfabed0dee2d1a41139de3472fa5c8aa8b10f8"
+    "generated": "2026-02-04T10:36:43.904Z",
+    "sha256": "27ee125d881ba518c9a2e3540b35d8adb4bd79374c32f38d7e7c9c027e0c05af"
   }
 }
