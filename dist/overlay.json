@@ -1374,7 +1374,7 @@
         "id": "5ac3b934156ae10c4430e83c",
         "name": "Ragman"
       },
-      "minPlayerLevel": 55,
+      "minPlayerLevel": 47,
       "requiredPrestige": {
         "name": "Prestige 4",
         "prestigeLevel": 4
@@ -2165,7 +2165,7 @@
   },
   "$meta": {
     "version": "1.0.0",
-    "generated": "2026-02-10T18:58:16.777Z",
-    "sha256": "6114d296e869cf3f3f9a32b13eeb2e0f0a26756d443c243116ca973d5167885d"
+    "generated": "2026-02-10T18:58:59.612Z",
+    "sha256": "6e952a102c9edf037d62616ce63807d3364bfd890af6b1d44f63c61dfd6057fc"
   }
 }
