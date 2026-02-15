@@ -1964,7 +1964,7 @@
         type: 'giveItem',
         items: [
           {
-            id: 'can_of_duck_pate', // TODO: Replace with real tarkov.dev item ID once available
+            id: '69774bb0a247161ff1068335',
             name: 'Can of duck pate',
           },
         ],
