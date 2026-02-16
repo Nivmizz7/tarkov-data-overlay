@@ -1994,6 +1994,14 @@
           standing: 0.03,
         },
       ],
+      customization: [
+        {
+          id: 'duck_hunt_customization01',
+          name: 'Scavenger target',
+          customizationType: 'ShootingRangeMark',
+          customizationTypeName: 'Targets',
+        },
+      ],
       achievement: [
         {
           id: '6984ab58ee0ae2c0d5075f33',
