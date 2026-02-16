@@ -36,7 +36,7 @@
       "objectives": {
         "5c1b765d86f77413193fa4f2": {
           "count": 10,
-          "description": "Eliminate PMC operatives using an SR-25 with Hybrid 46 suppressor and Schmidt & Bender PM II 1-8x24 scope",
+          "description": "Eliminate PMCs using an SR-25 with Hybrid 46 suppressor and Schmidt & Bender PM II 1-8x24 scope",
           "usingWeapon": [
             {
               "id": "5df8ce05b11454561e39243b",
@@ -205,17 +205,6 @@
     },
     "669fa3a40c828825de06d6a1": {
       "experience": 23000,
-      "finishRewards": {
-        "items": [
-          {
-            "item": {
-              "id": "5449016a4bdc2d6f028b456f",
-              "name": "Roubles"
-            },
-            "count": 500000
-          }
-        ]
-      },
       "objectives": {
         "66a0f5a7f9eae6761253114c": {
           "description": "Eliminate any targets while using an SR-2M with suppressor and KP-SR2 sight on Factory",
@@ -250,17 +239,7 @@
       }
     },
     "675c1ff1a757ddd00404f0aa": {
-      "experience": 32000,
-      "finishRewards": {
-        "traderStanding": [
-          {
-            "trader": {
-              "name": "Prapor"
-            },
-            "standing": 0.02
-          }
-        ]
-      }
+      "experience": 32000
     },
     "658027799634223183395339": {
       "objectives": {
@@ -2383,7 +2362,7 @@
   },
   "$meta": {
     "version": "1.0.0",
-    "generated": "2026-02-16T16:00:31.402Z",
-    "sha256": "959274abacad921647fc486ff3daa831268758067282e550f6ba11fba93ac61f"
+    "generated": "2026-02-16T16:02:16.089Z",
+    "sha256": "aa85b54e92b038b1bc02d041f89d5c7f9a3da121179c45f524cbabe9856804ff"
   }
 }
