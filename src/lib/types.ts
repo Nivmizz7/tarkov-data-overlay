@@ -235,6 +235,19 @@ export interface ValidationDetail {
   message: string;
 }
 
+/** Individual objective within a story chapter */
+export interface StoryObjective {
+  id: string;
+  type: 'main' | 'optional';
+  description: string;
+  notes?: string;
+}
+
+/** Reward summary for a story chapter */
+export interface StoryRewards {
+  description: string;
+}
+
 /** Story chapter structure for additions */
 export interface StoryChapter {
   id: string;
@@ -246,6 +259,10 @@ export interface StoryChapter {
   chapterRequirements?: Array<{ id: string; name: string }>;
   mapUnlocks?: Array<{ id: string; name: string }>;
   traderUnlocks?: Array<{ id: string; name: string }>;
+  description?: string;
+  notes?: string;
+  objectives?: StoryObjective[];
+  rewards?: StoryRewards;
 }
 
 /** Built overlay output structure */
