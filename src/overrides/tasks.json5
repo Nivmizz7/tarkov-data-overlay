@@ -770,4 +770,10 @@
   '64e7b99017ab941a6f7bf9d7': {
     experience: 7100, // Was: 21500
   },
+  // Debtor - Experience incorrect
+  // Proof: https://escapefromtarkov.fandom.com/wiki/Debtor
+  // Wiki rewards show +13,200 EXP.
+  '639dbaf17c898a131e1cffff': {
+    experience: 13200, // Was: 26600
+  },
 }
