@@ -66,6 +66,89 @@ describe('tarkov-api', () => {
     await expect(fetchTasks()).rejects.toThrow('GraphQL errors');
   });
 
+  it('fetchTasks sends pve gameMode variables when requested', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => ({ data: { tasks: [] } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await fetchTasks('pve');
+
+    const request = fetchMock.mock.calls[0][1] as { body?: string };
+    const payload = JSON.parse(String(request.body)) as {
+      variables?: { gameMode?: string };
+    };
+
+    expect(payload.variables).toEqual({ gameMode: 'pve' });
+  });
+
+  it('fetchTasks throws when GraphQL response is not an object', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => null,
+      })
+    );
+
+    await expect(fetchTasks()).rejects.toThrow(
+      'Invalid GraphQL response: expected an object, got null'
+    );
+  });
+
+  it('fetchTasks throws when GraphQL response is missing data', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({}),
+      })
+    );
+
+    await expect(fetchTasks()).rejects.toThrow(
+      'Invalid GraphQL response: missing data field'
+    );
+  });
+
+  it('fetchTasks throws when GraphQL response is missing tasks', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({ data: {} }),
+      })
+    );
+
+    await expect(fetchTasks()).rejects.toThrow(
+      'Invalid GraphQL response: missing data.tasks'
+    );
+  });
+
+  it('fetchTasks throws when GraphQL tasks payload is not an array', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({ data: { tasks: {} } }),
+      })
+    );
+
+    await expect(fetchTasks()).rejects.toThrow(
+      'Invalid GraphQL response: expected data.tasks to be an array, got object'
+    );
+  });
+
   it('findTaskById returns matching task', () => {
     const tasks: TaskData[] = [
       { id: 'task-1', name: 'Task 1' },

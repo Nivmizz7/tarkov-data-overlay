@@ -315,6 +315,15 @@ function getTimestamp(): string {
   return now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
 }
 
+function resolveOutputFilePath(output?: string): string | undefined {
+  if (output === undefined) return undefined;
+  const trimmed = output.trim();
+  if (trimmed.length === 0) {
+    return path.join(RESULTS_DIR, `comparison-${getTimestamp()}.json`);
+  }
+  return trimmed;
+}
+
 type CacheMetadata = {
   fetchedAt: string;
   taskCount: number;
@@ -731,7 +740,7 @@ function printUsage(): void {
   console.log('  --cache, -c        Use cached data if available');
   console.log('  --refresh, -r      Force refresh cache (fetch new data)');
   console.log(
-    '  --output, -o       Save results to file (auto-generates timestamp name)'
+    '  --output, -o [path] Save results to file (default: data/results/comparison-<timestamp>.json)'
   );
   console.log(
     '  --group-by <type>  Group output by: priority or category (default: category)'
@@ -751,6 +760,9 @@ function printUsage(): void {
     '  tsx scripts/wiki-task-spike.ts --all --cache --group-by=priority'
   );
   console.log('  tsx scripts/wiki-task-spike.ts --all --refresh --output');
+  console.log(
+    '  tsx scripts/wiki-task-spike.ts --all --output data/results/pve-comparison.json'
+  );
   console.log('  tsx scripts/wiki-task-spike.ts --all --gameMode=pve --cache');
   console.log();
 }
@@ -3022,9 +3034,29 @@ async function runSingleTask(
   }
 
   const wikiTitle = resolveWikiTitle(task, options.wiki);
-  printProgress(`Fetching wiki wikitext for "${wikiTitle}"...`);
-  const wikiResponse = await fetchWikiWikitext(wikiTitle);
-  printSuccess(`Fetched wiki page "${wikiResponse.title}"`);
+  const wikiCache = options.useCache && !options.refresh ? loadWikiCache(task.id) : null;
+  let wikiResponse: WikiFetchResult;
+
+  if (wikiCache) {
+    wikiResponse = {
+      title: wikiCache.title,
+      wikitext: wikiCache.wikitext,
+      lastRevision: wikiCache.lastRevision,
+    };
+    printSuccess(
+      `Loaded wiki page "${wikiResponse.title}" from cache (${wikiCache.fetchedAt})`
+    );
+  } else {
+    printProgress(`Fetching wiki wikitext for "${wikiTitle}"...`);
+    wikiResponse = await fetchWikiWikitext(wikiTitle);
+    saveWikiCache(
+      task.id,
+      wikiResponse.title,
+      wikiResponse.wikitext,
+      wikiResponse.lastRevision
+    );
+    printSuccess(`Fetched wiki page "${wikiResponse.title}"`);
+  }
 
   const wikiData = parseWikiTask(
     wikiResponse.title,
@@ -3393,11 +3425,10 @@ async function runBulkMode(
   }
 
   // Save results to file if requested
-  if (options.output !== undefined) {
-    ensureDir(RESULTS_DIR);
+  const outputFile = resolveOutputFilePath(options.output);
+  if (outputFile) {
+    ensureDir(path.dirname(outputFile));
     const groupBy = options.groupBy ?? 'category';
-    const timestamp = getTimestamp();
-    const outputFile = path.join(RESULTS_DIR, `comparison-${timestamp}.json`);
 
     // Group by priority
     const byPriority: Record<string, Discrepancy[]> = {

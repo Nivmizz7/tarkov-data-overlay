@@ -30,11 +30,13 @@ import {
   printError,
   formatCountLabel,
   fetchTasks,
+  SUPPORTED_GAME_MODES,
   validateAllOverrides,
   categorizeResults,
   type TaskOverride,
   type TaskAddition,
   type TaskData,
+  type GameMode,
   type ValidationResult,
   type ValidationDetail,
 } from '../src/lib/index.js';
@@ -67,10 +69,19 @@ type EditionData = {
 /**
  * Load mode-specific task overrides from source file
  */
-function loadModeTaskOverrides(mode: string): Record<string, TaskOverride> {
+function loadModeTaskOverrides(mode: GameMode): Record<string, TaskOverride> {
   const filePath = join(srcDir, 'overrides', 'modes', mode, 'tasks.json5');
   if (!existsSync(filePath)) return {};
   return loadJson5File<Record<string, TaskOverride>>(filePath);
+}
+
+/**
+ * Load mode-specific task additions from source file
+ */
+function loadModeTaskAdditions(mode: GameMode): Record<string, TaskAddition> {
+  const filePath = join(srcDir, 'additions', 'modes', mode, 'tasksAdd.json5');
+  if (!existsSync(filePath)) return {};
+  return loadJson5File<Record<string, TaskAddition>>(filePath);
 }
 
 /**
@@ -127,16 +138,16 @@ function getDetailColor(status: ValidationDetail['status']): string {
   }
 }
 
-type AdditionStatus = 'RESOLVED' | 'MISSING' | 'CHECK';
+export type AdditionStatus = 'RESOLVED' | 'MISSING' | 'CHECK';
 
-type AdditionResult = {
+export type AdditionResult = {
   key: string;
   name: string;
   status: AdditionStatus;
   message: string;
 };
 
-type EditionTaskReference = {
+export type EditionTaskReference = {
   editionId: string;
   editionTitle?: string;
   taskId: string;
@@ -188,7 +199,7 @@ function buildApiIndexes(apiTasks: TaskData[]) {
   return { byWikiLink, byName };
 }
 
-function checkTaskAdditions(
+export function checkTaskAdditions(
   additions: Record<string, TaskAddition>,
   apiTasks: TaskData[]
 ): AdditionResult[] {
@@ -236,7 +247,7 @@ function checkTaskAdditions(
   });
 }
 
-function checkEditionTaskReferences(
+export function checkEditionTaskReferences(
   editions: Record<string, EditionData>,
   apiTasks: TaskData[]
 ): EditionTaskReference[] {
@@ -273,8 +284,18 @@ function checkEditionTaskReferences(
 /**
  * Print validation results for all tasks
  */
-function printResults(results: ValidationResult[]): void {
-  printHeader('OVERLAY VALIDATION REPORT');
+type ResultPrintOptions = {
+  titlePrefix?: string;
+  overridePath?: string;
+};
+
+function printResults(results: ValidationResult[], options: ResultPrintOptions = {}): void {
+  const title = options.titlePrefix
+    ? `${options.titlePrefix} OVERLAY VALIDATION REPORT`
+    : 'OVERLAY VALIDATION REPORT';
+  const overridePath = options.overridePath ?? 'src/overrides/tasks.json5';
+
+  printHeader(title);
 
   // Print details for each task
   for (const result of results) {
@@ -290,7 +311,7 @@ function printResults(results: ValidationResult[]): void {
   }
 
   // Print summary
-  printHeader('SUMMARY');
+  printHeader(options.titlePrefix ? `${options.titlePrefix} SUMMARY` : 'SUMMARY');
 
   const { stillNeeded, fixed, removedFromApi } = categorizeResults(results);
 
@@ -350,7 +371,7 @@ function printResults(results: ValidationResult[]): void {
   if (obsoleteCount > 0) {
     console.log(`${icons.lightbulb} ${bold('RECOMMENDATION:')}`);
     console.log(
-      `   Update src/overrides/tasks.json5 to remove ${obsoleteCount} obsolete override(s)`
+      `   Update ${overridePath} to remove ${obsoleteCount} obsolete override(s)`
     );
     console.log();
   }
@@ -378,8 +399,13 @@ function getAdditionColor(status: AdditionStatus): string {
   }
 }
 
-function printAdditionResults(results: AdditionResult[]): void {
-  printHeader('ADDITIONS CHECK');
+function printAdditionResults(results: AdditionResult[], titlePrefix?: string): void {
+  const checkTitle = titlePrefix ? `${titlePrefix} ADDITIONS CHECK` : 'ADDITIONS CHECK';
+  const summaryTitle = titlePrefix
+    ? `${titlePrefix} ADDITIONS SUMMARY`
+    : 'ADDITIONS SUMMARY';
+
+  printHeader(checkTitle);
 
   for (const result of results) {
     const icon = getAdditionIcon(result.status);
@@ -393,7 +419,7 @@ function printAdditionResults(results: AdditionResult[]): void {
   const missing = results.filter((r) => r.status === 'MISSING');
   const review = results.filter((r) => r.status === 'CHECK');
 
-  printHeader('ADDITIONS SUMMARY');
+  printHeader(summaryTitle);
 
   console.log(
     formatCountLabel(
@@ -500,19 +526,32 @@ async function main(): Promise<void> {
     const additionResults = checkTaskAdditions(additions, apiTasks);
     printAdditionResults(additionResults);
 
-    // Validate mode-specific overrides
-    for (const mode of ['regular', 'pve'] as const) {
+    // Validate mode-specific overrides and additions
+    for (const mode of SUPPORTED_GAME_MODES) {
       const modeOverrides = loadModeTaskOverrides(mode);
+      const modeAdditions = loadModeTaskAdditions(mode);
       const modeOverrideCount = Object.keys(modeOverrides).length;
-      if (modeOverrideCount === 0) continue;
+      const modeAdditionCount = Object.keys(modeAdditions).length;
+      if (modeOverrideCount === 0 && modeAdditionCount === 0) continue;
 
       printProgress(`Fetching ${mode} tasks from tarkov.dev API...`);
       const modeApiTasks = await fetchTasks(mode);
       printSuccess(`Fetched ${modeApiTasks.length} ${mode} tasks from API\n`);
 
-      printProgress(`Validating ${mode} mode overrides...\n`);
-      const modeResults = validateAllOverrides(modeOverrides, modeApiTasks);
-      printResults(modeResults);
+      if (modeOverrideCount > 0) {
+        printProgress(`Validating ${mode} mode overrides...\n`);
+        const modeResults = validateAllOverrides(modeOverrides, modeApiTasks);
+        printResults(modeResults, {
+          titlePrefix: mode.toUpperCase(),
+          overridePath: `src/overrides/modes/${mode}/tasks.json5`,
+        });
+      }
+
+      if (modeAdditionCount > 0) {
+        printProgress(`Checking ${mode} mode additions against API...\n`);
+        const modeAdditionResults = checkTaskAdditions(modeAdditions, modeApiTasks);
+        printAdditionResults(modeAdditionResults, mode.toUpperCase());
+      }
     }
 
     printProgress('Checking edition exclusions against API...\n');

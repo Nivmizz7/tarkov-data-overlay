@@ -14,6 +14,7 @@ import {
   loadJsonFile,
   listJson5Files,
   SCHEMA_CONFIGS,
+  SUPPORTED_GAME_MODES,
   type SchemaValidationResult,
 } from '../src/lib/index.js';
 
@@ -114,7 +115,7 @@ export function validateSourceFiles(): SchemaValidationResult[] {
   }
 
   // Validate mode-specific overrides
-  for (const mode of ['regular', 'pve']) {
+  for (const mode of SUPPORTED_GAME_MODES) {
     const modeOverridesDir = join(srcDir, 'overrides', 'modes', mode);
     for (const file of listJson5Files(modeOverridesDir)) {
       const filePath = join(modeOverridesDir, file);

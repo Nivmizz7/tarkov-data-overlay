@@ -265,8 +265,11 @@ export interface StoryChapter {
   rewards?: StoryRewards;
 }
 
+/** Supported game modes for mode-specific overrides */
+export const SUPPORTED_GAME_MODES = ['regular', 'pve'] as const;
+
 /** Valid game modes for mode-specific overrides */
-export type GameMode = 'regular' | 'pve';
+export type GameMode = (typeof SUPPORTED_GAME_MODES)[number];
 
 /** Mode-specific overlay data */
 export interface ModeOverlay {

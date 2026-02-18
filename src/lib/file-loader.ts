@@ -31,7 +31,12 @@ export function getProjectPaths() {
  */
 export function loadJson5File<T = Record<string, unknown>>(filePath: string): T {
   const content = readFileSync(filePath, 'utf-8');
-  return JSON5.parse(content) as T;
+  try {
+    return JSON5.parse(content) as T;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to parse JSON5 file '${filePath}': ${message}`);
+  }
 }
 
 /**
@@ -68,7 +73,11 @@ export function loadAllJson5FromDir(
     const data = loadJson5File(filePath);
 
     if (data === null || typeof data !== 'object' || Array.isArray(data)) {
-      throw new Error(`Expected an object in ${filePath}, got ${Array.isArray(data) ? 'array' : typeof data}`);
+      throw new Error(
+        `Invalid JSON5 root type in '${filePath}': expected object, got ${
+          Array.isArray(data) ? 'array' : typeof data
+        }`
+      );
     }
 
     if (skipEmpty && Object.keys(data).length === 0) continue;

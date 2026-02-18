@@ -4,6 +4,8 @@
 
 import { describe, it, expect } from 'vitest';
 import { join } from 'path';
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
 import {
   getProjectPaths,
   loadJson5File,
@@ -46,6 +48,20 @@ describe('loadJson5File', () => {
 
   it('throws on non-existent file', () => {
     expect(() => loadJson5File('/non/existent/file.json5')).toThrow();
+  });
+
+  it('includes the source file path when JSON5 parsing fails', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'overlay-json5-'));
+    const filePath = join(tempDir, 'broken.json5');
+    writeFileSync(filePath, '{ invalid: }', 'utf-8');
+
+    try {
+      expect(() => loadJson5File(filePath)).toThrow(
+        `Failed to parse JSON5 file '${filePath}':`
+      );
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -115,5 +131,19 @@ describe('loadAllJson5FromDir', () => {
     const data = loadAllJson5FromDir('/non/existent/dir');
 
     expect(data).toEqual({});
+  });
+
+  it('includes the source file path when a JSON5 file root type is invalid', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'overlay-json5-'));
+    const filePath = join(tempDir, 'invalid-root.json5');
+    writeFileSync(filePath, '[1, 2, 3]', 'utf-8');
+
+    try {
+      expect(() => loadAllJson5FromDir(tempDir, false)).toThrow(
+        `Invalid JSON5 root type in '${filePath}': expected object, got array`
+      );
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });

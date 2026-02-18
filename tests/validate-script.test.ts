@@ -4,6 +4,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { join } from 'path';
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
 import {
   getProjectPaths,
   listJson5Files,
@@ -12,6 +14,7 @@ import {
 import {
   getValidator,
   initializeValidators,
+  validateFile,
   validateSourceFiles,
 } from '../scripts/validate.ts';
 
@@ -45,5 +48,38 @@ describe('scripts/validate helpers', () => {
 
     expect(files).toEqual(expectedFiles);
     expect(results.every((result) => result.valid)).toBe(true);
+  });
+
+  it('returns an invalid result when JSON5 parsing fails', () => {
+    const validators = initializeValidators();
+    const tempDir = mkdtempSync(join(tmpdir(), 'validate-json5-'));
+    const filePath = join(tempDir, 'tasks.json5');
+    writeFileSync(filePath, '{ invalid: }', 'utf-8');
+
+    try {
+      const result = validateFile(filePath, 'temp/tasks.json5', validators);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors?.[0]).toContain("Failed to parse JSON5 file");
+      expect(result.errors?.[0]).toContain(filePath);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns schema errors when parsed data does not satisfy schema', () => {
+    const validators = initializeValidators();
+    const tempDir = mkdtempSync(join(tmpdir(), 'validate-json5-'));
+    const filePath = join(tempDir, 'tasks.json5');
+    writeFileSync(filePath, '[1]', 'utf-8');
+
+    try {
+      const result = validateFile(filePath, 'temp/tasks.json5', validators);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors?.some((error) => error.includes('must be object'))).toBe(true);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });

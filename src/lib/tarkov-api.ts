@@ -9,6 +9,12 @@ import type { TaskData } from "./types.js";
 
 const TARKOV_API = "https://api.tarkov.dev/graphql";
 
+function getValueType(value: unknown): string {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  return typeof value;
+}
+
 /**
  * GraphQL query for fetching all tasks with their details
  */
@@ -176,8 +182,18 @@ async function executeQuery<T>(query: string, variables?: Record<string, unknown
 
   const result = await response.json();
 
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    throw new Error(
+      `Invalid GraphQL response: expected an object, got ${getValueType(result)}`
+    );
+  }
+
   if (result.errors) {
     throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+  }
+
+  if (!("data" in result)) {
+    throw new Error("Invalid GraphQL response: missing data field");
   }
 
   return result.data;
@@ -188,8 +204,26 @@ async function executeQuery<T>(query: string, variables?: Record<string, unknown
  */
 export async function fetchTasks(gameMode?: 'regular' | 'pve'): Promise<TaskData[]> {
   const variables = gameMode ? { gameMode } : undefined;
-  const data = await executeQuery<{ tasks: TaskData[] }>(TASKS_QUERY, variables);
-  return data.tasks;
+  const data = await executeQuery<unknown>(TASKS_QUERY, variables);
+
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error(
+      `Invalid GraphQL response: expected data to be an object, got ${getValueType(data)}`
+    );
+  }
+
+  if (!("tasks" in data)) {
+    throw new Error("Invalid GraphQL response: missing data.tasks");
+  }
+
+  const tasks = (data as { tasks: unknown }).tasks;
+  if (!Array.isArray(tasks)) {
+    throw new Error(
+      `Invalid GraphQL response: expected data.tasks to be an array, got ${getValueType(tasks)}`
+    );
+  }
+
+  return tasks as TaskData[];
 }
 
 /**

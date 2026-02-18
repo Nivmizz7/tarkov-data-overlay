@@ -487,6 +487,27 @@ describe('validateTaskOverride', () => {
   });
 
   describe('startRewards validation', () => {
+    it('returns FIXED when override is a subset of API startRewards', () => {
+      const apiTask = createApiTask({
+        startRewards: {
+          items: [
+            { item: { id: 'rub', name: 'Roubles' }, count: 5000 },
+            { item: { id: 'ammo', name: 'Ammo' }, count: 20 },
+          ],
+        },
+      });
+      const override: TaskOverride = {
+        startRewards: {
+          items: [{ item: { id: 'rub', name: 'Roubles' }, count: 5000 }],
+        },
+      };
+      const result = validateTaskOverride('test-task-id', override, [apiTask]);
+
+      expect(
+        result.details.some((d) => d.field === 'startRewards' && d.status === 'fixed')
+      ).toBe(true);
+    });
+
     it('returns FIXED when startRewards matches API', () => {
       const apiTask = createApiTask({
         startRewards: {

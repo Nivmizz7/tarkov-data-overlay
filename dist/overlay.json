@@ -453,13 +453,6 @@
         }
       }
     },
-    "67d03be712fb5f8fd2096332": {
-      "objectives": {
-        "67d03be712fb5f8fd2096334": {
-          "description": "Eliminate any target inside The Labyrinth"
-        }
-      }
-    },
     "6761f28a022f60bb320f3e95": {
       "wikiLink": "https://escapefromtarkov.fandom.com/wiki/New_Beginning_(Prestige_1)",
       "minPlayerLevel": 47,
@@ -3174,36 +3167,11 @@
           }
         }
       }
-    },
-    "pve": {
-      "tasks": {
-        "67d03be712fb5f8fd2096332": {
-          "objectives": {
-            "67d03be712fb5f8fd2096334": {
-              "count": 36
-            }
-          }
-        },
-        "675c15fbf7da9792a4059871": {
-          "taskRequirements": [
-            {
-              "task": {
-                "id": "6834158f2f0e2a7eb90b62c8",
-                "name": "Easy Money - Part 2 [PVE ZONE]"
-              },
-              "status": [
-                "active",
-                "complete"
-              ]
-            }
-          ]
-        }
-      }
     }
   },
   "$meta": {
     "version": "1.0.0",
-    "generated": "2026-02-18T02:26:40.809Z",
-    "sha256": "27557bdcdb569f1bf961dfbcc6b04cd3d651cb73fd51b9d21f504c6b49d61b3a"
+    "generated": "2026-02-18T02:55:09.916Z",
+    "sha256": "cb77fac35ca55dc4c77ae00b03ac322dad0605282bf5fa3febc4217d6594fccc"
   }
 }

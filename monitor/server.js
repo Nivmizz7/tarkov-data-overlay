@@ -9,6 +9,10 @@ const PUBLIC_DIR = path.resolve(__dirname, "public");
 const MAX_ROWS = Number(process.env.MAX_ROWS) || 200;
 
 const REMOTE_POLL_MS = Number(process.env.REMOTE_POLL_MS) || 30000;
+const REMOTE_FETCH_TIMEOUT_MS =
+  Number(process.env.REMOTE_FETCH_TIMEOUT_MS) || 10000;
+const REMOTE_FETCH_MAX_BYTES =
+  Number(process.env.REMOTE_FETCH_MAX_BYTES) || 5 * 1024 * 1024;
 
 const SOURCES = {
   tasks: {
@@ -91,36 +95,92 @@ function normalizeRemoteUrl(input) {
 
 function fetchRemoteText(url) {
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const settle = (handler, value) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      handler(value);
+    };
+
     let client = https;
     try {
       const parsedUrl = new URL(url);
       if (parsedUrl.protocol === "http:") {
         client = http;
       } else if (parsedUrl.protocol !== "https:") {
-        reject(new Error(`Unsupported URL protocol: ${parsedUrl.protocol}`));
+        settle(
+          reject,
+          new Error(`Unsupported URL protocol: ${parsedUrl.protocol}`),
+        );
         return;
       }
     } catch (error) {
-      reject(error);
+      settle(reject, error);
       return;
     }
 
     const request = client.get(url, (res) => {
       if (res.statusCode && res.statusCode >= 400) {
-        reject(new Error(`HTTP ${res.statusCode}`));
+        settle(
+          reject,
+          new Error(`Remote fetch failed with HTTP ${res.statusCode}: ${url}`),
+        );
         res.resume();
         return;
       }
+
+      const contentLengthHeader = Array.isArray(res.headers["content-length"])
+        ? res.headers["content-length"][0]
+        : res.headers["content-length"];
+      const expectedBytes = Number(contentLengthHeader);
+      if (
+        Number.isFinite(expectedBytes) &&
+        expectedBytes > REMOTE_FETCH_MAX_BYTES
+      ) {
+        settle(
+          reject,
+          new Error(
+            `Remote fetch exceeded max size (${expectedBytes} > ${REMOTE_FETCH_MAX_BYTES} bytes): ${url}`,
+          ),
+        );
+        res.resume();
+        return;
+      }
+
       res.setEncoding("utf8");
       let data = "";
+      let receivedBytes = 0;
       res.on("data", (chunk) => {
+        receivedBytes += Buffer.byteLength(chunk, "utf8");
+        if (receivedBytes > REMOTE_FETCH_MAX_BYTES) {
+          res.destroy(
+            new Error(
+              `Remote fetch exceeded max size (${receivedBytes} > ${REMOTE_FETCH_MAX_BYTES} bytes): ${url}`,
+            ),
+          );
+          return;
+        }
         data += chunk;
       });
       res.on("end", () => {
-        resolve(data);
+        settle(resolve, data);
+      });
+      res.on("error", (error) => {
+        settle(reject, error);
       });
     });
-    request.on("error", reject);
+    request.setTimeout(REMOTE_FETCH_TIMEOUT_MS, () => {
+      request.destroy(
+        new Error(
+          `Remote fetch timed out after ${REMOTE_FETCH_TIMEOUT_MS}ms: ${url}`,
+        ),
+      );
+    });
+    request.on("error", (error) => {
+      settle(reject, error);
+    });
   });
 }
 
@@ -530,11 +590,33 @@ function getState(type) {
   };
 }
 
+function removeClient(type, client) {
+  const clients = clientsByType.get(type);
+  if (!clients) {
+    return;
+  }
+  clients.delete(client);
+}
+
+function writeSse(type, client, message) {
+  if (client.destroyed || client.writableEnded) {
+    removeClient(type, client);
+    return false;
+  }
+  try {
+    client.write(message);
+    return true;
+  } catch {
+    removeClient(type, client);
+    return false;
+  }
+}
+
 function broadcast(type, event, payload) {
   const message = `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
   const clients = clientsByType.get(type) || new Set();
   clients.forEach((client) => {
-    client.write(message);
+    writeSse(type, client, message);
   });
 }
 
@@ -637,16 +719,46 @@ const server = http.createServer((req, res) => {
       "Cache-Control": "no-store",
       Connection: "keep-alive",
     });
-    res.write(`event: summary\ndata: ${JSON.stringify(getState(type))}\n\n`);
     const clients = clientsByType.get(type) || new Set();
     clients.add(res);
-    const keepAlive = setInterval(() => {
-      res.write(": keep-alive\n\n");
+    let closed = false;
+    let keepAlive = null;
+    const cleanup = () => {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      if (keepAlive) {
+        clearInterval(keepAlive);
+      }
+      removeClient(type, res);
+      req.off("close", cleanup);
+      res.off("close", cleanup);
+      res.off("finish", cleanup);
+      res.off("error", cleanup);
+    };
+
+    req.on("close", cleanup);
+    res.on("close", cleanup);
+    res.on("finish", cleanup);
+    res.on("error", cleanup);
+
+    if (
+      !writeSse(
+        type,
+        res,
+        `event: summary\ndata: ${JSON.stringify(getState(type))}\n\n`,
+      )
+    ) {
+      cleanup();
+      return;
+    }
+
+    keepAlive = setInterval(() => {
+      if (!writeSse(type, res, ": keep-alive\n\n")) {
+        cleanup();
+      }
     }, 15000);
-    req.on("close", () => {
-      clearInterval(keepAlive);
-      clients.delete(res);
-    });
     return;
   }
 

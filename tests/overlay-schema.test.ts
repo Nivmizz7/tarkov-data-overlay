@@ -16,8 +16,20 @@ function buildOverlayFixture(): OverlayOutput {
   const { srcDir } = getProjectPaths();
   const overrides = loadAllJson5FromDir(join(srcDir, 'overrides'));
   const additions = loadAllJson5FromDir(join(srcDir, 'additions'), false);
+  const modes: NonNullable<OverlayOutput['modes']> = {};
 
-  return {
+  for (const mode of ['regular', 'pve'] as const) {
+    const modeData = {
+      ...loadAllJson5FromDir(join(srcDir, 'overrides', 'modes', mode)),
+      ...loadAllJson5FromDir(join(srcDir, 'additions', 'modes', mode), false),
+    } as NonNullable<OverlayOutput['modes']>[typeof mode];
+
+    if (Object.keys(modeData).length > 0) {
+      modes[mode] = modeData;
+    }
+  }
+
+  const output: OverlayOutput = {
     ...overrides,
     ...additions,
     $meta: {
@@ -25,6 +37,12 @@ function buildOverlayFixture(): OverlayOutput {
       generated: new Date(0).toISOString(),
     },
   };
+
+  if (Object.keys(modes).length > 0) {
+    output.modes = modes;
+  }
+
+  return output;
 }
 
 describe('overlay.schema.json', () => {
@@ -35,6 +53,31 @@ describe('overlay.schema.json', () => {
     ) as { properties?: Record<string, unknown> };
 
     expect(rootSchema.properties).toHaveProperty('storyChapters');
+  });
+
+  it('includes mode-specific payload when mode files are present', () => {
+    const { srcDir } = getProjectPaths();
+    const regularSource = {
+      ...loadAllJson5FromDir(join(srcDir, 'overrides', 'modes', 'regular')),
+      ...loadAllJson5FromDir(join(srcDir, 'additions', 'modes', 'regular'), false),
+    };
+    const pveSource = {
+      ...loadAllJson5FromDir(join(srcDir, 'overrides', 'modes', 'pve')),
+      ...loadAllJson5FromDir(join(srcDir, 'additions', 'modes', 'pve'), false),
+    };
+    const output = buildOverlayFixture();
+
+    if (Object.keys(regularSource).length > 0) {
+      expect(output.modes?.regular).toBeDefined();
+    } else {
+      expect(output.modes?.regular).toBeUndefined();
+    }
+
+    if (Object.keys(pveSource).length > 0) {
+      expect(output.modes?.pve).toBeDefined();
+    } else {
+      expect(output.modes?.pve).toBeUndefined();
+    }
   });
 
   it('validates generated overlay output', () => {

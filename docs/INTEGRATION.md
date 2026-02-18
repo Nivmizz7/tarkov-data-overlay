@@ -45,6 +45,29 @@ async function fetchOverlay() {
       "objectives": [{ "id": "...", "description": "Stash ..." }]
     }
   },
+  "modes": {
+    "regular": {
+      "tasks": {
+        "<task-id>": {
+          "objectives": {
+            "<objective-id>": { "count": 24 }
+          }
+        }
+      }
+    },
+    "pve": {
+      "tasks": {
+        "<task-id>": {
+          "objectives": {
+            "<objective-id>": { "count": 36 }
+          }
+        }
+      },
+      "tasksAdd": {
+        "<mode-added-task-id>": { "id": "<mode-added-task-id>", "name": "..." }
+      }
+    }
+  },
   "editions": {
     "standard": { "id": "standard", "title": "Standard Edition", ... },
     "unheard": { "id": "unheard", "title": "The Unheard Edition", ... }
@@ -140,6 +163,39 @@ handles this by appending `objectivesAdd` to the objective list.
 
 ---
 
+## Applying Mode-Specific Data (PVP vs PVE)
+
+Some corrections differ by game mode. The overlay stores these under
+`modes.regular` and `modes.pve`.
+
+- Apply shared data first (`tasks`, `tasksAdd`)
+- Then apply mode-specific data (`modes[gameMode].tasks`, `modes[gameMode].tasksAdd`)
+- Use the same `gameMode` value for both tarkov.dev API query and overlay merge
+
+```typescript
+type GameMode = 'regular' | 'pve';
+
+function getTaskOverrideForMode(
+  taskId: string,
+  overlay: Overlay,
+  gameMode: GameMode
+) {
+  const shared = overlay.tasks?.[taskId] ?? {};
+  const modeSpecific = overlay.modes?.[gameMode]?.tasks?.[taskId] ?? {};
+  const merged = { ...shared, ...modeSpecific };
+  return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+function getTaskAdditionsForMode(overlay: Overlay, gameMode: GameMode): TaskAddition[] {
+  return [
+    ...Object.values(overlay.tasksAdd ?? {}),
+    ...Object.values(overlay.modes?.[gameMode]?.tasksAdd ?? {}),
+  ];
+}
+```
+
+---
+
 ## Using Additions (New Data)
 
 For data not in tarkov.dev (like game editions):
@@ -172,14 +228,24 @@ import type { Task, Overlay } from './types';
 
 const TARKOV_DEV_API = 'https://api.tarkov.dev/graphql';
 const OVERLAY_URL = 'https://cdn.jsdelivr.net/gh/tarkovtracker-org/tarkov-data-overlay@main/dist/overlay.json';
+type GameMode = 'regular' | 'pve';
 
-async function fetchTasks(): Promise<Task[]> {
+async function fetchTasks(gameMode: GameMode): Promise<Task[]> {
   // Fetch from tarkov.dev
   const response = await fetch(TARKOV_DEV_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      query: `{ tasks { id name minPlayerLevel map { id name } objectives { id count ... on TaskObjectiveItem { items { id name } } } } }`
+      query: `query($gameMode: GameMode) {
+        tasks(lang: en, gameMode: $gameMode) {
+          id
+          name
+          minPlayerLevel
+          map { id name }
+          objectives { id count ... on TaskObjectiveItem { items { id name } } }
+        }
+      }`,
+      variables: { gameMode },
     })
   });
   const { data } = await response.json();
@@ -191,13 +257,28 @@ async function fetchOverlay(): Promise<Overlay> {
   return response.json();
 }
 
-async function getTasksWithOverlay(): Promise<Task[]> {
+function applyTaskOverlayForMode(
+  task: Task,
+  overlay: Overlay,
+  gameMode: GameMode
+): Task {
+  const taskOverride = getTaskOverrideForMode(task.id, overlay, gameMode);
+  if (!taskOverride) return task;
+
+  // Reuse applyTaskOverlay from earlier example with a mode-merged override.
+  return applyTaskOverlay(task, { ...overlay, tasks: { [task.id]: taskOverride } });
+}
+
+async function getTasksWithOverlay(gameMode: GameMode): Promise<Task[]> {
   const [tasks, overlay] = await Promise.all([
-    fetchTasks(),
+    fetchTasks(gameMode),
     fetchOverlay()
   ]);
 
-  return tasks.map(task => applyTaskOverlay(task, overlay));
+  const patchedTasks = tasks.map(task => applyTaskOverlayForMode(task, overlay, gameMode));
+
+  const addedTasks = getTaskAdditionsForMode(overlay, gameMode);
+  return [...patchedTasks, ...addedTasks];
 }
 ```
 
@@ -217,6 +298,7 @@ async function getTasksWithOverlay(): Promise<Task[]> {
 interface Overlay {
   tasks?: Record<string, TaskOverride>;
   tasksAdd?: Record<string, TaskAddition>;
+  modes?: Partial<Record<GameMode, ModeOverlay>>;
   items?: Record<string, ItemOverride>;
   editions?: Record<string, Edition>;
   $meta: {
@@ -224,6 +306,13 @@ interface Overlay {
     generated: string;
     sha256?: string;
   };
+}
+
+type GameMode = 'regular' | 'pve';
+
+interface ModeOverlay {
+  tasks?: Record<string, TaskOverride>;
+  tasksAdd?: Record<string, TaskAddition>;
 }
 
 interface TaskOverride {

@@ -12,12 +12,11 @@ import {
   getProjectPaths,
   loadAllJson5FromDir,
   getPackageVersion,
+  SUPPORTED_GAME_MODES,
   type OverlayOutput,
 } from '../src/lib/index.js';
 
 const { rootDir, srcDir, distDir } = getProjectPaths();
-
-const VALID_MODES = ['regular', 'pve'] as const;
 
 /**
  * Load mode-specific override and addition files
@@ -25,7 +24,7 @@ const VALID_MODES = ['regular', 'pve'] as const;
 function loadModeFiles(): Partial<Record<string, Record<string, Record<string, unknown>>>> | undefined {
   const modes: Record<string, Record<string, Record<string, unknown>>> = {};
 
-  for (const mode of VALID_MODES) {
+  for (const mode of SUPPORTED_GAME_MODES) {
     const modeData: Record<string, Record<string, unknown>> = {};
 
     const overridesDir = join(srcDir, 'overrides', 'modes', mode);
