@@ -77,12 +77,10 @@ jobs:
 
           node <<'NODE'
           const fs = require('fs');
+          const path = require('path');
 
           const current = JSON.parse(fs.readFileSync('dist/overlay.json', 'utf8'));
           const previous = JSON.parse(fs.readFileSync('/tmp/overlay.prev.json', 'utf8'));
-
-          const MAX_ITEMS_PER_SECTION = 12;
-          const MAX_SECTIONS = 20;
 
           const isObject = (value) => value && typeof value === 'object' && !Array.isArray(value);
 
@@ -99,37 +97,120 @@ jobs:
             );
           };
 
-          const sections = Object.keys(current).filter((key) => isObject(current[key])).sort();
-          const lines = [];
+          const formatValue = (val) => {
+            if (typeof val === 'string') return `"${val}"`;
+            if (typeof val === 'object') return JSON.stringify(val);
+            return String(val);
+          };
 
-          for (const section of sections) {
-            const currentSection = current[section] || {};
-            const previousSection = isObject(previous[section]) ? previous[section] : {};
-            const addedIds = Object.keys(currentSection).filter((id) => !(id in previousSection));
-            if (!addedIds.length) continue;
+          const getDiff = (obj) => {
+            const diffs = [];
+            for (const [key, value] of Object.entries(obj)) {
+              diffs.push(`${key}=${formatValue(value)}`);
+            }
+            return diffs.join(', ');
+          };
 
-            const displayed = addedIds.slice(0, MAX_ITEMS_PER_SECTION).map((id) => {
+          const getChanges = (newObj, oldObj) => {
+            const changes = [];
+            for (const key of Object.keys(newObj)) {
+              if (!(key in oldObj)) {
+                changes.push(`+${key}=${formatValue(newObj[key])}`);
+              } else if (JSON.stringify(newObj[key]) !== JSON.stringify(oldObj[key])) {
+                changes.push(`${key}: ${formatValue(oldObj[key])} → ${formatValue(newObj[key])}`);
+              }
+            }
+            for (const key of Object.keys(oldObj)) {
+              if (!(key in newObj)) {
+                changes.push(`-${key}=${formatValue(oldObj[key])}`);
+              }
+            }
+            return changes.length > 0 ? changes.join(', ') : '';
+          };
+
+          const lines = ['Overlay update', ''];
+
+          // Get all JSON files from src/ directory
+          const getJsonFiles = (dir) => {
+            const files = [];
+            const walk = (currentPath) => {
+              if (!fs.existsSync(currentPath)) return;
+              const items = fs.readdirSync(currentPath);
+              items.forEach(item => {
+                const fullPath = path.join(currentPath, item);
+                const stat = fs.statSync(fullPath);
+                if (stat.isDirectory()) {
+                  walk(fullPath);
+                } else if (item.endsWith('.json5') || item.endsWith('.json')) {
+                  files.push(fullPath);
+                }
+              });
+            };
+            walk(dir);
+            return files.sort();
+          };
+
+          const srcFiles = getJsonFiles('src');
+          
+          for (const filePath of srcFiles) {
+            const relPath = filePath.replace(/^src\//, '');
+            
+            // Get section name from overlay
+            const fileName = path.basename(filePath, path.extname(filePath));
+            let sectionName = fileName;
+            
+            // Map file names to section names in overlay
+            const sectionMap = {
+              'items': 'items',
+              'itemsAdd': 'items',
+              'tasks': 'tasks',
+              'tasksAdd': 'tasks',
+              'traders': 'traders',
+              'hideout': 'hideout',
+              'editions': 'editions',
+              'storyChapters': 'storyChapters'
+            };
+            
+            sectionName = sectionMap[fileName] || fileName;
+            
+            const currentSection = (isObject(current[sectionName]) ? current[sectionName] : {});
+            const previousSection = (isObject(previous[sectionName]) ? previous[sectionName] : {});
+
+            const sectionChanges = [];
+
+            // Find added and modified
+            for (const id of Object.keys(currentSection).sort()) {
               const name = getDisplayName(currentSection[id]);
-              return name ? `+${name} (${id})` : `+${id}`;
-            });
+              const displayName = name ? \`\${name} (\${id})\` : id;
+              
+              if (!(id in previousSection)) {
+                const details = getDiff(currentSection[id]);
+                sectionChanges.push(\`  + \${displayName}: \${details}\`);
+              } else if (JSON.stringify(currentSection[id]) !== JSON.stringify(previousSection[id])) {
+                const changes = getChanges(currentSection[id], previousSection[id]);
+                sectionChanges.push(\`  ~ \${displayName}: \${changes}\`);
+              }
+            }
 
-            const remaining = addedIds.length - displayed.length;
-            const extra = remaining > 0 ? ` and ${remaining} more` : '';
-            lines.push(`${section}: ${displayed.join(', ')}${extra}`);
+            // Find removed
+            for (const id of Object.keys(previousSection).sort()) {
+              if (!(id in currentSection)) {
+                const name = getDisplayName(previousSection[id]);
+                const displayName = name ? \`\${name} (\${id})\` : id;
+                const details = getDiff(previousSection[id]);
+                sectionChanges.push(\`  - \${displayName}: \${details}\`);
+              }
+            }
 
-            if (lines.length >= MAX_SECTIONS) break;
+            if (sectionChanges.length === 0) {
+              lines.push(\`src/\${relPath}: no changes\`);
+            } else {
+              lines.push(\`src/\${relPath}:\`);
+              lines.push(...sectionChanges);
+            }
           }
 
-          if (!lines.length) {
-            lines.push('No new entries detected in overlay.json');
-          }
-
-          const message = [
-            'Overlay update',
-            '',
-            ...lines,
-          ].join('\n');
-
+          const message = lines.join('\\n');
           fs.writeFileSync('/tmp/tag-message.txt', message);
           NODE
 
