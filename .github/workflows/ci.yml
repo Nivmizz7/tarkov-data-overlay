@@ -134,3 +134,13 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git tag -a "$NEXT_TAG" -F /tmp/tag-message.txt
           git push origin "$NEXT_TAG"
+
+      - name: Create Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.next_tag }}
+          body_path: /tmp/tag-message.txt
+          files: dist/overlay.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
