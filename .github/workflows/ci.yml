@@ -66,6 +66,94 @@ jobs:
           echo "latest_tag=$latest_tag" >> "$GITHUB_OUTPUT"
           echo "next_tag=$next_tag" >> "$GITHUB_OUTPUT"
 
+      - name: Build release notes
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
+        id: notes
+        run: |
+          latest_tag="${{ steps.version.outputs.latest_tag }}"
+          
+          if [[ -z "$latest_tag" ]]; then
+            echo "body=Initial release" > /tmp/release-notes.txt
+          else
+            git show "$latest_tag:dist/overlay.json" > /tmp/overlay.prev.json 2>/dev/null || echo '{}' > /tmp/overlay.prev.json
+            
+            node > /tmp/gen-notes.js << 'EOF'
+          const fs = require('fs');
+          const path = require('path');
+          const current = JSON.parse(fs.readFileSync('dist/overlay.json', 'utf8'));
+          const previous = JSON.parse(fs.readFileSync('/tmp/overlay.prev.json', 'utf8'));
+          
+          delete current._meta;
+          delete previous._meta;
+          
+          const isObject = (v) => v && typeof v === 'object' && !Array.isArray(v);
+          const formatValue = (v) => typeof v === 'string' ? '"' + v + '"' : JSON.stringify(v);
+          const getDiff = (o) => Object.entries(o).map(([k,v]) => k + '=' + formatValue(v)).join(', ');
+          const getChanges = (n, o) => {
+            const c = [];
+            Object.keys(n).forEach(k => {
+              if (!(k in o)) c.push('+' + k + '=' + formatValue(n[k]));
+              else if (JSON.stringify(n[k]) !== JSON.stringify(o[k])) 
+                c.push(k + ': ' + formatValue(o[k]) + ' -> ' + formatValue(n[k]));
+            });
+            Object.keys(o).forEach(k => {
+              if (!(k in n)) c.push('-' + k + '=' + formatValue(o[k]));
+            });
+            return c.join(', ');
+          };
+          
+          const getFiles = (dir) => {
+            const files = [];
+            const walk = (p) => {
+              if (!fs.existsSync(p)) return;
+              fs.readdirSync(p).forEach(i => {
+                const f = path.join(p, i);
+                if (fs.statSync(f).isDirectory()) walk(f);
+                else if (i.endsWith('.json5') || i.endsWith('.json')) files.push(f);
+              });
+            };
+            walk(dir);
+            return files.sort();
+          };
+          
+          const map = {'items': 'items', 'itemsAdd': 'items', 'tasks': 'tasks', 'tasksAdd': 'tasks', 'traders': 'traders', 'hideout': 'hideout', 'editions': 'editions', 'storyChapters': 'storyChapters'};
+          const lines = ['Overlay update', ''];
+          
+          getFiles('src').forEach(f => {
+            const rel = f.replace(/^src\//, '');
+            const name = path.basename(f, path.extname(f));
+            const section = map[name] || name;
+            const curr = isObject(current[section]) ? current[section] : {};
+            const prev = isObject(previous[section]) ? previous[section] : {};
+            const changes = [];
+            
+            Object.keys(curr).sort().forEach(id => {
+              const n = curr[id].name || curr[id].shortName || id;
+              const d = n + ' (' + id + ')';
+              if (!(id in prev)) changes.push('  + ' + d + ': ' + getDiff(curr[id]));
+              else if (JSON.stringify(curr[id]) !== JSON.stringify(prev[id]))
+                changes.push('  ~ ' + d + ': ' + getChanges(curr[id], prev[id]));
+            });
+            
+            Object.keys(prev).sort().forEach(id => {
+              if (!(id in curr)) {
+                const n = prev[id].name || prev[id].shortName || id;
+                const d = n + ' (' + id + ')';
+                changes.push('  - ' + d + ': ' + getDiff(prev[id]));
+              }
+            });
+            
+            if (changes.length === 0) lines.push('src/' + rel + ': no changes');
+            else { lines.push('src/' + rel + ':'); changes.forEach(c => lines.push(c)); }
+          });
+          
+          fs.writeFileSync('/tmp/release-notes.txt', lines.join('\n'));
+          EOF
+            node /tmp/gen-notes.js
+          fi
+          
+          cat /tmp/release-notes.txt
+
       - name: Create and push tag
         if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
         env:
@@ -81,7 +169,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.next_tag }}
-          body: "Overlay version ${{ steps.version.outputs.next_tag }}"
+          body_path: /tmp/release-notes.txt
           files: dist/overlay.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
