@@ -49,9 +49,40 @@ jobs:
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check if overlay data actually changed
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
+        id: data_check
+        run: |
+          git fetch --tags
+          latest_tag=$(git tag --list 'v*.*' --sort=-v:refname | head -n 1)
+          
+          if [[ -z "$latest_tag" ]]; then
+            echo "has_real_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            git show "$latest_tag:dist/overlay.json" > /tmp/overlay.prev.json
+            
+            node <<'NODECHECK'
+            const fs = require('fs');
+            const current = JSON.parse(fs.readFileSync('dist/overlay.json', 'utf8'));
+            const previous = JSON.parse(fs.readFileSync('/tmp/overlay.prev.json', 'utf8'));
+            
+            delete current._meta;
+            delete previous._meta;
+            
+            const hasChanges = JSON.stringify(current) !== JSON.stringify(previous);
+            fs.writeFileSync('/tmp/has-changes.txt', hasChanges ? 'true' : 'false');
+            NODECHECK
+            
+            if grep -q "true" /tmp/has-changes.txt; then
+              echo "has_real_changes=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "has_real_changes=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
       - name: Compute next tag
         id: version
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.data_check.outputs.has_real_changes == 'true'
         run: |
           latest_tag=$(git tag --list 'v*.*' --sort=-v:refname | head -n 1)
           if [[ -z "$latest_tag" ]]; then
@@ -66,14 +97,10 @@ jobs:
           echo "next_tag=$next_tag" >> "$GITHUB_OUTPUT"
 
       - name: Build tag message
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.data_check.outputs.has_real_changes == 'true'
         run: |
-          prev_tag="${{ steps.version.outputs.latest_tag }}"
-          if [[ -n "$prev_tag" ]]; then
-            git show "$prev_tag:dist/overlay.json" > /tmp/overlay.prev.json
-          else
-            echo '{}' > /tmp/overlay.prev.json
-          fi
+          latest_tag="${{ steps.version.outputs.latest_tag }}"
+          git show "$latest_tag:dist/overlay.json" > /tmp/overlay.prev.json
 
           node <<'NODE'
           const fs = require('fs');
@@ -98,45 +125,41 @@ jobs:
           };
 
           const formatValue = (val) => {
-            if (typeof val === 'string') return `"${val}"`;
+            if (typeof val === 'string') return '"' + val + '"';
             if (typeof val === 'object') return JSON.stringify(val);
             return String(val);
           };
 
           const getDiff = (obj) => {
             const diffs = [];
-            for (const [key, value] of Object.entries(obj)) {
-              diffs.push(`${key}=${formatValue(value)}`);
-            }
+            Object.entries(obj).forEach(([key, value]) => {
+              diffs.push(key + '=' + formatValue(value));
+            });
             return diffs.join(', ');
           };
 
           const getChanges = (newObj, oldObj) => {
             const changes = [];
-            for (const key of Object.keys(newObj)) {
+            Object.keys(newObj).forEach(key => {
               if (!(key in oldObj)) {
-                changes.push(`+${key}=${formatValue(newObj[key])}`);
+                changes.push('+' + key + '=' + formatValue(newObj[key]));
               } else if (JSON.stringify(newObj[key]) !== JSON.stringify(oldObj[key])) {
-                changes.push(`${key}: ${formatValue(oldObj[key])} → ${formatValue(newObj[key])}`);
+                changes.push(key + ': ' + formatValue(oldObj[key]) + ' -> ' + formatValue(newObj[key]));
               }
-            }
-            for (const key of Object.keys(oldObj)) {
+            });
+            Object.keys(oldObj).forEach(key => {
               if (!(key in newObj)) {
-                changes.push(`-${key}=${formatValue(oldObj[key])}`);
+                changes.push('-' + key + '=' + formatValue(oldObj[key]));
               }
-            }
+            });
             return changes.length > 0 ? changes.join(', ') : '';
           };
 
-          const lines = ['Overlay update', ''];
-
-          // Get all JSON files from src/ directory
           const getJsonFiles = (dir) => {
             const files = [];
             const walk = (currentPath) => {
               if (!fs.existsSync(currentPath)) return;
-              const items = fs.readdirSync(currentPath);
-              items.forEach(item => {
+              fs.readdirSync(currentPath).forEach(item => {
                 const fullPath = path.join(currentPath, item);
                 const stat = fs.statSync(fullPath);
                 if (stat.isDirectory()) {
@@ -150,72 +173,61 @@ jobs:
             return files.sort();
           };
 
+          const sectionMap = {
+            'items': 'items', 'itemsAdd': 'items',
+            'tasks': 'tasks', 'tasksAdd': 'tasks',
+            'traders': 'traders', 'hideout': 'hideout',
+            'editions': 'editions', 'storyChapters': 'storyChapters'
+          };
+
+          const lines = ['Overlay update', ''];
           const srcFiles = getJsonFiles('src');
           
-          for (const filePath of srcFiles) {
+          srcFiles.forEach(filePath => {
             const relPath = filePath.replace(/^src\//, '');
-            
-            // Get section name from overlay
             const fileName = path.basename(filePath, path.extname(filePath));
-            let sectionName = fileName;
-            
-            // Map file names to section names in overlay
-            const sectionMap = {
-              'items': 'items',
-              'itemsAdd': 'items',
-              'tasks': 'tasks',
-              'tasksAdd': 'tasks',
-              'traders': 'traders',
-              'hideout': 'hideout',
-              'editions': 'editions',
-              'storyChapters': 'storyChapters'
-            };
-            
-            sectionName = sectionMap[fileName] || fileName;
+            const sectionName = sectionMap[fileName] || fileName;
             
             const currentSection = (isObject(current[sectionName]) ? current[sectionName] : {});
             const previousSection = (isObject(previous[sectionName]) ? previous[sectionName] : {});
 
             const sectionChanges = [];
 
-            // Find added and modified
-            for (const id of Object.keys(currentSection).sort()) {
+            Object.keys(currentSection).sort().forEach(id => {
               const name = getDisplayName(currentSection[id]);
-              const displayName = name ? \`\${name} (\${id})\` : id;
+              const displayName = name ? name + ' (' + id + ')' : id;
               
               if (!(id in previousSection)) {
                 const details = getDiff(currentSection[id]);
-                sectionChanges.push(\`  + \${displayName}: \${details}\`);
+                sectionChanges.push('  + ' + displayName + ': ' + details);
               } else if (JSON.stringify(currentSection[id]) !== JSON.stringify(previousSection[id])) {
                 const changes = getChanges(currentSection[id], previousSection[id]);
-                sectionChanges.push(\`  ~ \${displayName}: \${changes}\`);
+                sectionChanges.push('  ~ ' + displayName + ': ' + changes);
               }
-            }
+            });
 
-            // Find removed
-            for (const id of Object.keys(previousSection).sort()) {
+            Object.keys(previousSection).sort().forEach(id => {
               if (!(id in currentSection)) {
                 const name = getDisplayName(previousSection[id]);
-                const displayName = name ? \`\${name} (\${id})\` : id;
+                const displayName = name ? name + ' (' + id + ')' : id;
                 const details = getDiff(previousSection[id]);
-                sectionChanges.push(\`  - \${displayName}: \${details}\`);
+                sectionChanges.push('  - ' + displayName + ': ' + details);
               }
-            }
+            });
 
             if (sectionChanges.length === 0) {
-              lines.push(\`src/\${relPath}: no changes\`);
+              lines.push('src/' + relPath + ': no changes');
             } else {
-              lines.push(\`src/\${relPath}:\`);
-              lines.push(...sectionChanges);
+              lines.push('src/' + relPath + ':');
+              sectionChanges.forEach(change => lines.push(change));
             }
-          }
+          });
 
-          const message = lines.join('\\n');
-          fs.writeFileSync('/tmp/tag-message.txt', message);
+          fs.writeFileSync('/tmp/tag-message.txt', lines.join('\n'));
           NODE
 
       - name: Create and push tag
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.data_check.outputs.has_real_changes == 'true'
         env:
           NEXT_TAG: ${{ steps.version.outputs.next_tag }}
         run: |
@@ -230,7 +242,7 @@ jobs:
           fi
 
       - name: Create Release
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.data_check.outputs.has_real_changes == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.next_tag }}
