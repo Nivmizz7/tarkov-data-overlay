@@ -29,8 +29,7 @@ jobs:
       - name: Check commit author
         id: check_author
         run: |
-          commit_author=$(git log -1 --pretty=format:'%an')
-          if [[ "$commit_author" == "github-actions[bot]" ]]; then
+          if [[ "${{ github.actor }}" == "github-actions" ]]; then
             echo "is_bot_commit=true" >> "$GITHUB_OUTPUT"
           else
             echo "is_bot_commit=false" >> "$GITHUB_OUTPUT"
