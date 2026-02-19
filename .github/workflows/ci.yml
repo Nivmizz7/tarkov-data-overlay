@@ -37,9 +37,7 @@ jobs:
       - name: Check if source files changed
         id: src_check
         run: |
-          if git diff HEAD --name-only | grep -E 'src/.*\.(json5|json)$'; then
-            echo "src_changed=true" >> "$GITHUB_OUTPUT"
-          elif git status --short | grep -E 'src/.*\.(json5|json)$'; then
+          if git diff "${{ github.event.before }}" "${{ github.event.after }}" --name-only 2>/dev/null | grep -E 'src/.*\.(json5|json)$'; then
             echo "src_changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "src_changed=false" >> "$GITHUB_OUTPUT"
@@ -58,16 +56,6 @@ jobs:
             git commit -m "chore: build overlay [skip ci]"
             git push
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Check if source files changed
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        id: src_check
-        run: |
-          if git diff ${{ github.event.before }} ${{ github.event.after }} --name-only | grep -E 'src/.*\.(json5|json)$'; then
-            echo "src_changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "src_changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check if overlay data actually changed
