@@ -1,5 +1,21 @@
 {
   "tasks": {
+    "5c0d190cd09282029f5390d8": {
+      "experience": 12500,
+      "objectives": {
+        "5c1b760686f77412780211a3": {
+          "count": 5
+        }
+      },
+      "taskRequirements": [
+        {
+          "task": {
+            "id": "657315df034d76585f032e01",
+            "name": "Shooting Cans"
+          }
+        }
+      ]
+    },
     "6740a2c17e3818d5bb0648b6": {
       "name": "Half Empty",
       "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Half_Empty"
@@ -3155,7 +3171,7 @@
   },
   "$meta": {
     "version": "1.0.0",
-    "generated": "2026-02-19T10:21:15.809Z",
-    "sha256": "c50409f1a271196ab742ec09eb32dd80c2578b47eccc8bf2dae27684609f1f21"
+    "generated": "2026-02-19T10:22:02.420Z",
+    "sha256": "8f4d1ce237dd4a70f1ff51a524ee08b40edf00d61f69feeb695c1476739eec74"
   }
 }
