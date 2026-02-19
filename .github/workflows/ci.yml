@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -136,10 +138,15 @@ jobs:
         env:
           NEXT_TAG: ${{ steps.version.outputs.next_tag }}
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git tag -a "$NEXT_TAG" -F /tmp/tag-message.txt
-          git push origin "$NEXT_TAG"
+          git fetch --tags
+          if git rev-parse "$NEXT_TAG" >/dev/null 2>&1; then
+            echo "Tag $NEXT_TAG already exists, skipping tag creation"
+          else
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git tag -a "$NEXT_TAG" -F /tmp/tag-message.txt
+            git push origin "$NEXT_TAG"
+          fi
 
       - name: Create Release
         if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
