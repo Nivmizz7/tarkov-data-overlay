@@ -26,8 +26,19 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Check commit author
+        id: check_author
+        run: |
+          commit_author=$(git log -1 --pretty=format:'%an')
+          if [[ "$commit_author" == "github-actions[bot]" ]]; then
+            echo "is_bot_commit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_bot_commit=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Compute next tag
         id: version
+        if: steps.check_author.outputs.is_bot_commit == 'true'
         run: |
           latest_tag=$(git tag --list 'v*.*' --sort=-v:refname | head -n 1)
           if [[ -z "$latest_tag" ]]; then
@@ -42,6 +53,7 @@ jobs:
           echo "next_tag=$next_tag" >> "$GITHUB_OUTPUT"
 
       - name: Build tag message
+        if: steps.check_author.outputs.is_bot_commit == 'true'
         run: |
           prev_tag="${{ steps.version.outputs.latest_tag }}"
           if [[ -n "$prev_tag" ]]; then
@@ -109,6 +121,7 @@ jobs:
           NODE
 
       - name: Create and push tag
+        if: steps.check_author.outputs.is_bot_commit == 'true'
         env:
           NEXT_TAG: ${{ steps.version.outputs.next_tag }}
         run: |
