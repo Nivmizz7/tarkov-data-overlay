@@ -1,4 +1,27 @@
 {
+  // Grenadier - Objective count, task prerequisite, and experience incorrect
+  // Proof: https://escapefromtarkov.fandom.com/wiki/Grenadier
+  // tarkov.dev shows 8 kills, wiki confirms 5 kills
+  // tarkov.dev shows no prerequisites, wiki shows "Previous: Shooting Cans"
+  // tarkov.dev shows 18000 XP, game confirms 12500 XP
+  '5c0d190cd09282029f5390d8': {
+    experience: 12500, // Was: 18000
+    objectives: {
+      '5c1b760686f77412780211a3': {
+        count: 5, // Was: 8
+      },
+    },
+    taskRequirements: [
+      {
+        task: {
+          id: '657315df034d76585f032e01',
+          name: 'Shooting Cans',
+        },
+      },
+    ], // Was: [] (empty)
+  },
+
+
   // Half Empty - Name and wiki link incorrect
   // Proof: https://escapefromtarkov.fandom.com/wiki/Half_Empty
   // tarkov.dev shows "Half-Empty" with hyphen, should be space
