@@ -34,15 +34,6 @@ jobs:
       - name: Build overlay
         run: npm run build
 
-      - name: Check if source files changed
-        id: src_check
-        run: |
-          if git diff "${{ github.event.before }}" "${{ github.event.after }}" --name-only 2>/dev/null | grep -E 'src/.*\.(json5|json)$'; then
-            echo "src_changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "src_changed=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Commit dist (main branch only)
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         id: commit
@@ -58,41 +49,11 @@ jobs:
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check if overlay data actually changed
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.src_check.outputs.src_changed == 'true'
-        id: data_check
-        run: |
-          git fetch --tags
-          latest_tag=$(git tag --list 'v*.*' --sort=-v:refname | head -n 1)
-          
-          if [[ -z "$latest_tag" ]]; then
-            echo "has_real_changes=true" >> "$GITHUB_OUTPUT"
-          else
-            git show "$latest_tag:dist/overlay.json" > /tmp/overlay.prev.json
-            
-            cat > /tmp/check-changes.js << 'EOF'
-          const fs = require('fs');
-          const current = JSON.parse(fs.readFileSync('dist/overlay.json', 'utf8'));
-          const previous = JSON.parse(fs.readFileSync('/tmp/overlay.prev.json', 'utf8'));
-          delete current._meta;
-          delete previous._meta;
-          const hasChanges = JSON.stringify(current) !== JSON.stringify(previous);
-          fs.writeFileSync('/tmp/has-changes.txt', hasChanges ? 'true' : 'false');
-          EOF
-            
-            node /tmp/check-changes.js
-            
-            if grep -q "true" /tmp/has-changes.txt; then
-              echo "has_real_changes=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "has_real_changes=false" >> "$GITHUB_OUTPUT"
-            fi
-          fi
-
       - name: Compute next tag
         id: version
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.src_check.outputs.src_changed == 'true' && steps.data_check.outputs.has_real_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
         run: |
+          git fetch --tags
           latest_tag=$(git tag --list 'v*.*' --sort=-v:refname | head -n 1)
           if [[ -z "$latest_tag" ]]; then
             next_tag="v1.0"
@@ -105,157 +66,22 @@ jobs:
           echo "latest_tag=$latest_tag" >> "$GITHUB_OUTPUT"
           echo "next_tag=$next_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Build tag message
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.src_check.outputs.src_changed == 'true' && steps.data_check.outputs.has_real_changes == 'true'
-        run: |
-          latest_tag="${{ steps.version.outputs.latest_tag }}"
-          git show "$latest_tag:dist/overlay.json" > /tmp/overlay.prev.json
-
-          node <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-
-          const current = JSON.parse(fs.readFileSync('dist/overlay.json', 'utf8'));
-          const previous = JSON.parse(fs.readFileSync('/tmp/overlay.prev.json', 'utf8'));
-
-          const isObject = (value) => value && typeof value === 'object' && !Array.isArray(value);
-
-          const getDisplayName = (entry) => {
-            if (!entry || typeof entry !== 'object') return null;
-            return (
-              entry.name ||
-              entry.shortName ||
-              entry.title ||
-              entry.key ||
-              entry.traderName ||
-              entry.objective ||
-              null
-            );
-          };
-
-          const formatValue = (val) => {
-            if (typeof val === 'string') return '"' + val + '"';
-            if (typeof val === 'object') return JSON.stringify(val);
-            return String(val);
-          };
-
-          const getDiff = (obj) => {
-            const diffs = [];
-            Object.entries(obj).forEach(([key, value]) => {
-              diffs.push(key + '=' + formatValue(value));
-            });
-            return diffs.join(', ');
-          };
-
-          const getChanges = (newObj, oldObj) => {
-            const changes = [];
-            Object.keys(newObj).forEach(key => {
-              if (!(key in oldObj)) {
-                changes.push('+' + key + '=' + formatValue(newObj[key]));
-              } else if (JSON.stringify(newObj[key]) !== JSON.stringify(oldObj[key])) {
-                changes.push(key + ': ' + formatValue(oldObj[key]) + ' -> ' + formatValue(newObj[key]));
-              }
-            });
-            Object.keys(oldObj).forEach(key => {
-              if (!(key in newObj)) {
-                changes.push('-' + key + '=' + formatValue(oldObj[key]));
-              }
-            });
-            return changes.length > 0 ? changes.join(', ') : '';
-          };
-
-          const getJsonFiles = (dir) => {
-            const files = [];
-            const walk = (currentPath) => {
-              if (!fs.existsSync(currentPath)) return;
-              fs.readdirSync(currentPath).forEach(item => {
-                const fullPath = path.join(currentPath, item);
-                const stat = fs.statSync(fullPath);
-                if (stat.isDirectory()) {
-                  walk(fullPath);
-                } else if (item.endsWith('.json5') || item.endsWith('.json')) {
-                  files.push(fullPath);
-                }
-              });
-            };
-            walk(dir);
-            return files.sort();
-          };
-
-          const sectionMap = {
-            'items': 'items', 'itemsAdd': 'items',
-            'tasks': 'tasks', 'tasksAdd': 'tasks',
-            'traders': 'traders', 'hideout': 'hideout',
-            'editions': 'editions', 'storyChapters': 'storyChapters'
-          };
-
-          const lines = ['Overlay update', ''];
-          const srcFiles = getJsonFiles('src');
-          
-          srcFiles.forEach(filePath => {
-            const relPath = filePath.replace(/^src\//, '');
-            const fileName = path.basename(filePath, path.extname(filePath));
-            const sectionName = sectionMap[fileName] || fileName;
-            
-            const currentSection = (isObject(current[sectionName]) ? current[sectionName] : {});
-            const previousSection = (isObject(previous[sectionName]) ? previous[sectionName] : {});
-
-            const sectionChanges = [];
-
-            Object.keys(currentSection).sort().forEach(id => {
-              const name = getDisplayName(currentSection[id]);
-              const displayName = name ? name + ' (' + id + ')' : id;
-              
-              if (!(id in previousSection)) {
-                const details = getDiff(currentSection[id]);
-                sectionChanges.push('  + ' + displayName + ': ' + details);
-              } else if (JSON.stringify(currentSection[id]) !== JSON.stringify(previousSection[id])) {
-                const changes = getChanges(currentSection[id], previousSection[id]);
-                sectionChanges.push('  ~ ' + displayName + ': ' + changes);
-              }
-            });
-
-            Object.keys(previousSection).sort().forEach(id => {
-              if (!(id in currentSection)) {
-                const name = getDisplayName(previousSection[id]);
-                const displayName = name ? name + ' (' + id + ')' : id;
-                const details = getDiff(previousSection[id]);
-                sectionChanges.push('  - ' + displayName + ': ' + details);
-              }
-            });
-
-            if (sectionChanges.length === 0) {
-              lines.push('src/' + relPath + ': no changes');
-            } else {
-              lines.push('src/' + relPath + ':');
-              sectionChanges.forEach(change => lines.push(change));
-            }
-          });
-
-          fs.writeFileSync('/tmp/tag-message.txt', lines.join('\n'));
-          NODE
-
       - name: Create and push tag
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.src_check.outputs.src_changed == 'true' && steps.data_check.outputs.has_real_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
         env:
           NEXT_TAG: ${{ steps.version.outputs.next_tag }}
         run: |
-          git fetch --tags
-          if git rev-parse "$NEXT_TAG" >/dev/null 2>&1; then
-            echo "Tag $NEXT_TAG already exists, skipping tag creation"
-          else
-            git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-            git tag -a "$NEXT_TAG" -F /tmp/tag-message.txt
-            git push origin "$NEXT_TAG"
-          fi
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git tag -a "$NEXT_TAG" -m "Overlay version $NEXT_TAG"
+          git push origin "$NEXT_TAG"
 
       - name: Create Release
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.src_check.outputs.src_changed == 'true' && steps.data_check.outputs.has_real_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.next_tag }}
-          body_path: /tmp/tag-message.txt
+          body: "Overlay version ${{ steps.version.outputs.next_tag }}"
           files: dist/overlay.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
