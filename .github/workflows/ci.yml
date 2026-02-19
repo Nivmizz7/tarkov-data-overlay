@@ -34,6 +34,17 @@ jobs:
       - name: Build overlay
         run: npm run build
 
+      - name: Check if source files changed
+        id: src_check
+        run: |
+          if git diff HEAD --name-only | grep -E 'src/.*\.(json5|json)$'; then
+            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+          elif git status --short | grep -E 'src/.*\.(json5|json)$'; then
+            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "src_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Commit dist (main branch only)
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         id: commit
@@ -50,10 +61,10 @@ jobs:
           fi
 
       - name: Check if source files changed
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         id: src_check
         run: |
-          if git diff HEAD~1 --name-only | grep -E 'src/.*\.(json5|json)$' > /dev/null; then
+          if git diff ${{ github.event.before }} ${{ github.event.after }} --name-only | grep -E 'src/.*\.(json5|json)$'; then
             echo "src_changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "src_changed=false" >> "$GITHUB_OUTPUT"
