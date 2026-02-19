@@ -49,8 +49,18 @@ jobs:
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check if overlay data actually changed
+      - name: Check if source files changed
         if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true'
+        id: src_check
+        run: |
+          if git diff HEAD~1 --name-only | grep -E 'src/.*\.(json5|json)$' > /dev/null; then
+            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "src_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check if overlay data actually changed
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.src_check.outputs.src_changed == 'true'
         id: data_check
         run: |
           git fetch --tags
@@ -82,7 +92,7 @@ jobs:
 
       - name: Compute next tag
         id: version
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.data_check.outputs.has_real_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.src_check.outputs.src_changed == 'true' && steps.data_check.outputs.has_real_changes == 'true'
         run: |
           latest_tag=$(git tag --list 'v*.*' --sort=-v:refname | head -n 1)
           if [[ -z "$latest_tag" ]]; then
@@ -97,7 +107,7 @@ jobs:
           echo "next_tag=$next_tag" >> "$GITHUB_OUTPUT"
 
       - name: Build tag message
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.data_check.outputs.has_real_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.src_check.outputs.src_changed == 'true' && steps.data_check.outputs.has_real_changes == 'true'
         run: |
           latest_tag="${{ steps.version.outputs.latest_tag }}"
           git show "$latest_tag:dist/overlay.json" > /tmp/overlay.prev.json
@@ -227,7 +237,7 @@ jobs:
           NODE
 
       - name: Create and push tag
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.data_check.outputs.has_real_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.src_check.outputs.src_changed == 'true' && steps.data_check.outputs.has_real_changes == 'true'
         env:
           NEXT_TAG: ${{ steps.version.outputs.next_tag }}
         run: |
@@ -242,7 +252,7 @@ jobs:
           fi
 
       - name: Create Release
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.data_check.outputs.has_real_changes == 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.commit.outputs.has_changes == 'true' && steps.src_check.outputs.src_changed == 'true' && steps.data_check.outputs.has_real_changes == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.next_tag }}
