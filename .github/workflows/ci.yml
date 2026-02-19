@@ -61,7 +61,7 @@ jobs:
           else
             git show "$latest_tag:dist/overlay.json" > /tmp/overlay.prev.json
             
-            node <<'NODECHECK'
+            node > /tmp/check-result.js << 'NODECHECK'
             const fs = require('fs');
             const current = JSON.parse(fs.readFileSync('dist/overlay.json', 'utf8'));
             const previous = JSON.parse(fs.readFileSync('/tmp/overlay.prev.json', 'utf8'));
@@ -72,6 +72,8 @@ jobs:
             const hasChanges = JSON.stringify(current) !== JSON.stringify(previous);
             fs.writeFileSync('/tmp/has-changes.txt', hasChanges ? 'true' : 'false');
             NODECHECK
+            
+            node /tmp/check-result.js
             
             if grep -q "true" /tmp/has-changes.txt; then
               echo "has_real_changes=true" >> "$GITHUB_OUTPUT"
