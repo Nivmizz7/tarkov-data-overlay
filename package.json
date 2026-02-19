@@ -22,7 +22,7 @@
   "author": "Lab",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.6.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
